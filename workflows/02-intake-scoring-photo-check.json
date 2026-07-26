@@ -1,0 +1,807 @@
+{
+  "name": "02-intake-scoring-photo-check",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n  \"intake_id\": \"c846603e-6ab4-404e-a3c3-8a1505d181cb\"\n}"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        16
+      ],
+      "id": "a510aa0e-69ad-481b-8893-5358e18ef33c",
+      "name": "Trigger: Called by Intake"
+    },
+    {
+      "parameters": {
+        "path": "e0006cb0-6e86-4fc6-b122-0d8f9c09b770",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        -176
+      ],
+      "id": "cf278306-c17a-412f-8c50-458d5ada5928",
+      "name": "Trigger: Manual Retry",
+      "webhookId": "e0006cb0-6e86-4fc6-b122-0d8f9c09b770"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intake_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "37815df9-a4e8-46e6-8ad8-03ecafd67840"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Single Record"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "3fbae476-5245-45aa-a5ee-a21809d0b9f9",
+                    "leftValue": "={{ $json.intake_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Batch (Cron)"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        -80
+      ],
+      "id": "41dc3ff8-1d80-4d02-8150-cdf76c15da8d",
+      "name": "Switch: Route by Trigger Type"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "intake",
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "intake_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.intake_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        448,
+        -176
+      ],
+      "id": "6c86f605-5503-4e0a-83a8-ab9add003e39",
+      "name": "Supabase: Get Single Intake Record",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "intake",
+        "limit": 15,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "batch_processing_status",
+              "condition": "eq",
+              "keyValue": "queued"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        448,
+        16
+      ],
+      "id": "0a99a1e9-7240-483a-a16d-9e34dee4dba6",
+      "name": "Supabase: Get Queued Records",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "media_forensics",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "intake_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Merge: Single + Batch').item.json.intake_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        -80
+      ],
+      "id": "ae9b8979-9d40-46e8-b33a-95a8d8a11491",
+      "name": "Supabase: Get Photo URLs",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        672,
+        -80
+      ],
+      "id": "c78584ac-8fe4-40f9-a8f7-2ef51c878c53",
+      "name": "Merge: Single + Batch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const photos = $input.all();\n\nif (!photos.length) {\n  throw new Error('No media_forensics rows found for this intake_id');\n}\n\nconst intake_id = photos[0].json.intake_id;\nconst batch_id = photos[0].json.batch_id;\n\n// Build signed URL list for Gemini — filter out any with null/expired URLs\nconst now = new Date();\nconst photoUrls = photos\n  .filter(p => {\n    if (!p.json.retool_signed_url) return false;\n    if (!p.json.retool_url_expires_at) return false;\n    return new Date(p.json.retool_url_expires_at) > now;\n  })\n  .map(p => ({\n    id: p.json.id,\n    url: p.json.retool_signed_url,\n    photo_type: p.json.photo_type,\n    r2_object_key: p.json.r2_object_key\n  }));\n\nif (photoUrls.length === 0) {\n  throw new Error('All signed URLs are null or expired for intake_id: ' + intake_id + '. Run URL refresh first.');\n}\n\nreturn [{\n  json: {\n    intake_id,\n    batch_id,\n    photo_urls: photoUrls,\n    images_in_batch: photoUrls.length\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        -80
+      ],
+      "id": "f3fd50b1-17f9-44c5-9dff-a14567ba8949",
+      "name": "Code: Build Gemini Photo List"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "intake",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "intake_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Supabase: Get Photo URLs').item.json.intake_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "batch_processing_status",
+              "fieldValue": "photo_check"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        -80
+      ],
+      "id": "268071d8-fd85-4e79-b93b-8dcebb5589aa",
+      "name": "Supabase: Update Status — photo_check",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appYcE1r1ZddkVbK3",
+          "mode": "list",
+          "cachedResultName": "SPeXecute TS CRM",
+          "cachedResultUrl": "https://airtable.com/appYcE1r1ZddkVbK3"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblwHQEfJ1QqKrNFi",
+          "mode": "list",
+          "cachedResultName": "CLIENT CONFIG TP",
+          "cachedResultUrl": "https://airtable.com/appYcE1r1ZddkVbK3/tblwHQEfJ1QqKrNFi"
+        },
+        "filterByFormula": "{Agency Slug} = 'noir-collective-france'",
+        "returnAll": false,
+        "limit": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        -80
+      ],
+      "id": "88a84849-3592-4c7f-8e31-3692ed61115c",
+      "name": "Read Agency Slug",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "CUAL7Ly1XFjdriNl",
+          "name": "Airtable PAT API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"You are a photo compliance checker for a modeling agency.\\n\\nTASK:\\nQuickly determine if the submitted photos are usable for basic talent evaluation. Be fast. Do not overanalyze.\\nThese are amateur photos — do NOT expect professional quality.\\n\\nPASS if the person can be clearly seen and evaluated.\\nFAIL only if something prevents evaluation.\\n\\nFAIL conditions:\\n- Face or body not visible\\n- Blurry, too dark, or unclear\\n- Sunglasses or obstruction hiding features\\n- Multiple people in frame\\n- Heavy filters or AI-generated image\\n- Background or setup makes subject unclear\\n\\nAll other issues (lighting, pose, clothing, background imperfections) → PASS.\\nWhen in doubt → PASS.\\n\\nYou are reviewing {{ $('Code: Build Gemini Photo List').first().json.images_in_batch }} photos as one batch.\\nGive ONE overall decision.\\n\\nCONFIDENCE RULE:\\nOnly set overall_pass = false if confidence >= 0.85.\\nOtherwise → overall_pass = true.\\n\\nPHOTO QUALITY SCORE (0–100):\\n- 80+: very clear\\n- 60–79: good\\n- 40–59: usable but limited\\n- <40: poor but still usable\\n\\nRespond ONLY in JSON:\\n{\\n  \\\"overall_pass\\\": true or false,\\n  \\\"overall_confidence\\\": 0.0,\\n  \\\"photo_quality_score\\\": 0.0,\\n  \\\"fail_reasons\\\": \\\"string or null\\\",\\n  \\\"summary\\\": \\\"one short sentence\\\"\\n}\\n\\nPhotos:\\n{{ $('Code: Build Gemini Photo List').first().json.photo_urls.map((p, i) => `Photo ${i+1} (${p.photo_type}): ${p.url}`).join('\\\\n') }}\"\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"responseMimeType\": \"application/json\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1792,
+        -80
+      ],
+      "id": "90f1f902-b462-424a-b736-dd3b734649e7",
+      "name": "Gemini Call 1: Photo Check",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "PYYO93Slv5tGPoXN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\n\n// Gemini returns candidates[0].content.parts[0].text\nconst raw = response.candidates[0].content.parts[0].text;\n\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n} catch (e) {\n  throw new Error('Failed to parse Gemini Call 1 response: ' + raw);\n}\n\nconst overall_pass = parsed.overall_pass;\nconst overall_confidence = parsed.overall_confidence;\nconst photo_quality_score = parsed.photo_quality_score ?? null;\nconst fail_reasons = parsed.fail_reasons ?? null;\nconst summary = parsed.summary ?? null;\n\nif (typeof overall_pass !== 'boolean') {\n  throw new Error('overall_pass missing or not boolean: ' + raw);\n}\n\nif (typeof overall_confidence !== 'number') {\n  throw new Error('overall_confidence missing or not number: ' + raw);\n}\n\nreturn [{\n  json: {\n    intake_id: $('Code: Build Gemini Photo List').first().json.intake_id,\n    batch_id: $('Code: Build Gemini Photo List').first().json.batch_id,\n    photo_urls: $('Code: Build Gemini Photo List').first().json.photo_urls,\n    overall_pass,\n    overall_confidence,\n    photo_quality_score,\n    fail_reasons,\n    summary\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2016,
+        -80
+      ],
+      "id": "c096eb6e-c75e-4b9c-983b-159ae5a617ce",
+      "name": "Code: Parse Photo Gate Result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2fe3404a-c18c-43a7-af1f-b2d13e1def7b",
+              "leftValue": "={{ $json.overall_pass }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2240,
+        -80
+      ],
+      "id": "4b7fd489-8f8e-4244-9c47-3a5aa640694d",
+      "name": "If: PASS or FAIL"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "media_forensics",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "intake_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.intake_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "photo_instruction_pass",
+              "fieldValue": "true"
+            },
+            {
+              "fieldId": "photo_compliance_checked",
+              "fieldValue": "true"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2464,
+        -176
+      ],
+      "id": "a3a1648d-eb04-4b40-aeb0-e1a0e47bfa57",
+      "name": "Supabase: Update media_forensics (pass)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "media_forensics",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "intake_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.intake_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "photo_instruction_pass",
+              "fieldValue": "false"
+            },
+            {
+              "fieldId": "photo_instruction_fail_reason",
+              "fieldValue": "={{ $json.fail_reasons }}"
+            },
+            {
+              "fieldId": "photo_compliance_checked",
+              "fieldValue": "true"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2464,
+        16
+      ],
+      "id": "df1ffc65-5636-4b5b-a027-8f34e0ba304b",
+      "name": "Supabase: Update media_forensics (fail)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "intake",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "intake_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.intake_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "batch_processing_status",
+              "fieldValue": "structural"
+            },
+            {
+              "fieldId": "photo_quality_status",
+              "fieldValue": "approved"
+            },
+            {
+              "fieldId": "photo_quality_score",
+              "fieldValue": "={{ $('Code: Parse Photo Gate Result').item.json.photo_quality_score }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2688,
+        -176
+      ],
+      "id": "57524374-85d0-493e-bba9-2c5183cfeddf",
+      "name": "Supabase: Update intake (pass)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "intake",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "intake_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.intake_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "batch_processing_status",
+              "fieldValue": "complete"
+            },
+            {
+              "fieldId": "application_stage",
+              "fieldValue": "photo_instruction_fail"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "inactive"
+            },
+            {
+              "fieldId": "photo_quality_status",
+              "fieldValue": "failed"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2688,
+        16
+      ],
+      "id": "0b1caf12-3c4a-4b0c-a79c-4a065b627afd",
+      "name": "Supabase: Update intake (fail)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "5yx5D3VV49799BuR",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/5yx5D3VV49799BuR",
+          "cachedResultName": "intake-candidate-analysis"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "intake_id": "={{ $json.intake_id }}"
+          },
+          "matchingColumns": [
+            "intake_id"
+          ],
+          "schema": [
+            {
+              "id": "intake_id",
+              "displayName": "intake_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2912,
+        -176
+      ],
+      "id": "48dd1ebe-d955-4b55-b511-3cc18af8ff2f",
+      "name": "Call 'noir-collective-france-intake-candidate-analysis'"
+    }
+  ],
+  "pinData": {
+    "Trigger: Called by Intake": [
+      {
+        "json": {
+          "intake_id": "778a10ae-61d2-4cc0-8bfc-52d3e3505d64"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Trigger: Manual Retry": {
+      "main": [
+        [
+          {
+            "node": "Switch: Route by Trigger Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: Called by Intake": {
+      "main": [
+        [
+          {
+            "node": "Switch: Route by Trigger Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: Route by Trigger Type": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Get Single Intake Record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase: Get Queued Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Get Queued Records": {
+      "main": [
+        [
+          {
+            "node": "Merge: Single + Batch",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Supabase: Get Single Intake Record": {
+      "main": [
+        [
+          {
+            "node": "Merge: Single + Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge: Single + Batch": {
+      "main": [
+        [
+          {
+            "node": "Read Agency Slug",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Get Photo URLs": {
+      "main": [
+        [
+          {
+            "node": "Code: Build Gemini Photo List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Build Gemini Photo List": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Update Status — photo_check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Update Status — photo_check": {
+      "main": [
+        [
+          {
+            "node": "Gemini Call 1: Photo Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Agency Slug": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Get Photo URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Call 1: Photo Check": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse Photo Gate Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse Photo Gate Result": {
+      "main": [
+        [
+          {
+            "node": "If: PASS or FAIL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If: PASS or FAIL": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Update media_forensics (pass)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase: Update media_forensics (fail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Update media_forensics (pass)": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Update intake (pass)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Update media_forensics (fail)": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Update intake (fail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Update intake (pass)": {
+      "main": [
+        [
+          {
+            "node": "Call 'noir-collective-france-intake-candidate-analysis'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "89ea0774-decc-43da-9749-dc411fb4e699",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4e6bae92b2fffd2d829302f81ac40e1b7b77354f1229f56727b9c27fa8c5a39a"
+  },
+  "id": "pTl0Nkj8ymaZIXQ1",
+  "tags": []
+}

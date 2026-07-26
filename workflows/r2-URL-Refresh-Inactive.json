@@ -1,0 +1,367 @@
+{
+  "name": "r2-URL-Refresh-Inactive",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtHour": 5,
+              "triggerAtMinute": null
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a120245d-0ab3-4008-864d-ef450685cb8b",
+      "name": "Schedule: Sunday 01:00"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "intake",
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "=inactive"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        240,
+        0
+      ],
+      "id": "a2d842ee-2528-4a2c-8201-b5bdc17d38c6",
+      "name": "Supabase: Get Intake Stage",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "media_forensics",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "retool_url_expires_at",
+              "condition": "lte",
+              "keyValue": "={{ DateTime.now().plus({days: 8}).toISO() }}"
+            },
+            {
+              "keyName": "retool_url_expires_at",
+              "condition": "is",
+              "keyValue": "null"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        656,
+        0
+      ],
+      "id": "6af4c4b1-b78e-4dea-a9b0-79aedd590525",
+      "name": "Supabase: Get Expiring URLs",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => ({\n  json: {\n    intake_id: item.json.intake_id,\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "9e7aefd5-1636-4f79-9cee-1400efea5164",
+      "name": "Code: Extract Intake IDs"
+    },
+    {
+      "parameters": {
+        "jsCode": "const mediaItems = $input.all();\nconst intakeItems = $('Code: Extract Intake IDs').all();\n\nconst activeIntakeIds = new Set(intakeItems.map(i => i.json.intake_id));\n\nreturn mediaItems\n  .filter(item => activeIntakeIds.has(item.json.intake_id))\n  .map(item => ({\n    json: {\n      id: item.json.id,\n      intake_id: item.json.intake_id,\n      r2_object_key: item.json.r2_object_key\n    }\n  }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        0
+      ],
+      "id": "09bc57f5-f29e-43d5-8f45-ebd582803a44",
+      "name": "Code: Filter by Active Intake IDs"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => ({\n  json: {\n    ...item.json,\n    expiry_seconds: 1209600\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        0
+      ],
+      "id": "b2c99a58-30b0-43f9-81a3-026306e156a8",
+      "name": "Code: Determine Expiry"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://spx-r2-signer.spexai.workers.dev/sign",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"r2_object_key\": \"{{ $json.r2_object_key }}\",\n  \"expiry_seconds\": {{ $json.expiry_seconds }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1280,
+        0
+      ],
+      "id": "de72b715-a7f8-4a78-bbf9-ff9b2be4b3d9",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "9jyrtrQ9BFGn9ARq",
+          "name": "SPX-R2-Signer-Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "media_forensics",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Code: Filter by Active Intake IDs').item.json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "retool_signed_url",
+              "fieldValue": "={{ $json.retool_signed_url }}"
+            },
+            {
+              "fieldId": "retool_url_expires_at",
+              "fieldValue": "={{ $json.retool_url_expires_at }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1488,
+        0
+      ],
+      "id": "5093facc-12be-4e40-b315-66da3552f497",
+      "name": "Supabase: Update Signed URL",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        160
+      ],
+      "id": "f5ee8245-b268-45b8-865c-f1726dbb8b63",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule: Sunday 01:00": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Get Intake Stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Get Intake Stage": {
+      "main": [
+        [
+          {
+            "node": "Code: Extract Intake IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Extract Intake IDs": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Get Expiring URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Get Expiring URLs": {
+      "main": [
+        [
+          {
+            "node": "Code: Filter by Active Intake IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Filter by Active Intake IDs": {
+      "main": [
+        [
+          {
+            "node": "Code: Determine Expiry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Determine Expiry": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Update Signed URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Get Intake Stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "fdaca958-1a39-4712-a341-6fd2d4080171",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4e6bae92b2fffd2d829302f81ac40e1b7b77354f1229f56727b9c27fa8c5a39a"
+  },
+  "id": "QDzl0ojgnphyJE98",
+  "tags": [
+    {
+      "updatedAt": "2026-04-11T17:19:07.684Z",
+      "createdAt": "2026-04-11T17:19:07.684Z",
+      "id": "0kHDvaC4AFK5HWaF",
+      "name": "systems_update"
+    },
+    {
+      "updatedAt": "2026-04-07T05:54:12.040Z",
+      "createdAt": "2026-04-07T05:54:12.040Z",
+      "id": "3ctqgxjHRVbu8uPR",
+      "name": "noir-test"
+    },
+    {
+      "updatedAt": "2026-04-07T05:54:41.309Z",
+      "createdAt": "2026-04-07T05:54:41.309Z",
+      "id": "617SY1s5iJZzmnko",
+      "name": "noir-collective-france"
+    },
+    {
+      "updatedAt": "2026-04-11T08:01:19.854Z",
+      "createdAt": "2026-04-11T08:01:19.854Z",
+      "id": "6QshQRR9Gq480E2s",
+      "name": "template"
+    },
+    {
+      "updatedAt": "2026-04-07T05:54:15.456Z",
+      "createdAt": "2026-04-07T05:54:15.456Z",
+      "id": "U5Z5J0HkLxUQA5hK",
+      "name": "prototype"
+    },
+    {
+      "updatedAt": "2026-04-11T17:19:17.815Z",
+      "createdAt": "2026-04-11T17:19:17.815Z",
+      "id": "n69dqzL4kSMo9qoo",
+      "name": "maintainence"
+    },
+    {
+      "updatedAt": "2026-04-11T08:02:56.129Z",
+      "createdAt": "2026-04-11T08:02:56.129Z",
+      "id": "vP2cQVtcEk5GKWoz",
+      "name": "_template"
+    },
+    {
+      "updatedAt": "2026-04-07T06:57:56.832Z",
+      "createdAt": "2026-04-07T06:57:56.832Z",
+      "id": "wAJsiiKAX1HZZKGW",
+      "name": "reference"
+    },
+    {
+      "updatedAt": "2026-04-07T06:58:06.901Z",
+      "createdAt": "2026-04-07T06:58:06.901Z",
+      "id": "xzkRjFgbGBkSMd3E",
+      "name": "demo"
+    }
+  ]
+}

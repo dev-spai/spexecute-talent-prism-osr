@@ -1,0 +1,126 @@
+## Purpose
+
+Stores human-written notes attached to an applicant throughout the review process. These notes provide context that should not be generated or overwritten by automated AI analysis.
+
+Examples include observations, escalation reasons, manual decisions, and internal reviewer comments.
+
+---
+
+## Table Relationships
+
+| Relationship | Description |
+| --- | --- |
+| `intake_id` → `intake.intake_id` | Each note belongs to a single applicant. |
+| One applicant | Can have multiple notes. |
+
+---
+
+# Columns
+
+## Identity
+
+| Column | Meaning |
+| --- | --- |
+| `id` | Unique note identifier (UUID). |
+| `intake_id` | Applicant the note belongs to. |
+
+---
+
+## Author Information
+
+| Column | Meaning |
+| --- | --- |
+| `author_id` | User or reviewer who created the note. |
+
+---
+
+## Note Content
+
+| Column | Meaning |
+| --- | --- |
+| `note_text` | The actual note content. |
+| `note_type` | Category of note for filtering and reporting. |
+
+Allowed values:
+
+| Value | Meaning |
+| --- | --- |
+| `observation` | General reviewer observation. |
+| `flag_reason` | Reason an applicant was flagged. |
+| `escalation_reason` | Reason the application was escalated. |
+| `decision_note` | Explanation for an acceptance/rejection or other decision. |
+
+---
+
+## Audit
+
+| Column | Meaning |
+| --- | --- |
+| `created_at` | Timestamp when the note was created. |
+
+---
+
+# Constraints
+
+### Primary Key
+
+```
+id
+```
+
+---
+
+### Foreign Key
+
+```
+intake_id
+    ↓
+intake.intake_id
+```
+
+Each note must reference an existing applicant.
+
+---
+
+### Check Constraint
+
+`note_type` is restricted to:
+
+- observation
+- flag_reason
+- escalation_reason
+- decision_note
+
+---
+
+# Typical Workflow
+
+```
+Applicant
+
+↓
+
+Manual Review
+
+↓
+
+Reviewer adds note
+
+↓
+
+Applicant profile displays note history
+
+↓
+
+Future reviewers can see previous decisions
+```
+
+---
+
+# Common Use Cases
+
+- Document why an applicant was rejected.
+- Explain why an application was escalated.
+- Record manual observations during review.
+- Leave handoff notes for another recruiter or scout.
+- Maintain an audit trail of human decisions.

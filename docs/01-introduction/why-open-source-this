@@ -1,0 +1,33 @@
+# Why We Open-Sourced This
+
+We are handing over the keys to a system designed to capture hundreds of thousands of dollars in hidden talent value.
+
+We believe AI should help recruiters/scouts discover talent not replace their expertise.
+
+Too many recruitment tools force organizations into rigid workflows or require them to replace systems that already work well. Talent Prism takes a different approach.
+
+By sharing this reference implementation, our goal is to demonstrate how configurable AI evaluation, workflow automation, and secure infrastructure can be combined into a flexible foundation that organizations can adapt to their own standards, markets, and recruitment philosophy.
+
+We hope it accelerates innovation across the talent industry and enables more organizations to build tools that allow recruiters to focus on what they do best: recognizing potential that no algorithm can fully understand.
+
+## Commercial Implementations: The Paid Upside
+
+The open-source repository provides the foundation. For agencies that want to immediately capture the revenue upside without writing a single line of code, we offer:
+
+1. Quick-Start Deployment (Fast ROI)
+
+We deploy this architecture onto your secure cloud, connect your existing open-call forms, and configure the AI to recognize your agency's specific "look" (e.g., high-fashion vs. commercial lifestyle).
+
+Outcome: Your open calls go from weeks of backlog to a real-time dashboard of top-tier talent in 14 days.
+
+2. Fully Managed SaaS (Zero Maintenance)
+
+We host the infrastructure, manage the AI compute costs, and provide a white-labeled Open Call Dashboard for your team. You just log in and review the best candidates.
+
+3. Premium Agency Customization
+
+Advanced AI Tuning: Custom models trained to spot trend-matching features and analyze social proof/engagement.
+
+Brand/Client Portals: Allow your clients to submit casting briefs that automatically query your newly organized roster.
+
+Automated Compliance: Built-in checks for image rights, minor protections, and consent forms.

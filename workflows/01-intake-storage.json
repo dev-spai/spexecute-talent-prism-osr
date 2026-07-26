@@ -1,0 +1,1335 @@
+{
+  "name": "01-intake-storage",
+  "nodes": [
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"error\": \"Unauthorized\",\n  \"message\": \"Invalid or missing authentication token.\"\n}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        224,
+        -80
+      ],
+      "id": "257518d4-2bbc-4750-bba9-3064dd0984fb",
+      "name": "ACK : Unauthorized",
+      "notesInFlow": true,
+      "notes": "401 response for invalid/missing webhook token"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"received\",\n  \"message\": \"Application received successfully.\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        224,
+        -272
+      ],
+      "id": "37ea3389-1ab4-44cd-93f1-140638143984",
+      "name": "ACK : Submission Received",
+      "notesInFlow": true,
+      "notes": "200 OK acknowledgment to Tally. Confirms submission received."
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "your-agency-intake",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        -176
+      ],
+      "id": "77823c2e-8ab3-4e72-8ce9-9cd5a9175a5d",
+      "name": "Form Intake Trigger",
+      "webhookId": "d445916f-9dbf-456a-8132-e04319e7576c",
+      "notesInFlow": true,
+      "onError": "continueErrorOutput",
+      "notes": "Tally form webhook : Noir Collective Prototype  \nIntake pipeline entry point"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appYcE1r1ZddkVbK3",
+          "mode": "list",
+          "cachedResultName": "SPeXecute TS CRM",
+          "cachedResultUrl": "https://airtable.com/appYcE1r1ZddkVbK3"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblwHQEfJ1QqKrNFi",
+          "mode": "list",
+          "cachedResultName": "CLIENT CONFIG TP",
+          "cachedResultUrl": "https://airtable.com/appYcE1r1ZddkVbK3/tblwHQEfJ1QqKrNFi"
+        },
+        "filterByFormula": "{Agency Slug} = 'noir-collective-france'",
+        "returnAll": false,
+        "limit": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        -272
+      ],
+      "id": "51cd7aaf-6978-46e0-8f75-8310cc6fb5ae",
+      "name": "Read Agency Slug",
+      "notesInFlow": true,
+      "retryOnFail": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "CUAL7Ly1XFjdriNl",
+          "name": "Airtable PAT API"
+        }
+      },
+      "notes": "Read Noir CLIENT CONFIG from Airtable. Single row        returned. All pipeline nodes reference this"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// NODE 3 — Parse & Validate Form Data\n// Built against real Tally payload — noir-collective-france\n// Last updated: April 2026\n// ============================================================\n\nconst FIELD_MAP = {\n  'question_AJBrbB': 'full_name',\n  'question_B1xEb7': 'email',\n  'question_kANbR6': 'phone',\n  'question_PEYr95': 'gender',\n  'question_7DvbJ9': 'is_minor',\n  'question_vBPXxA': 'date_of_birth',\n  'question_KoVpBM': 'location_city',\n  'question_LGPDMG': 'zip_code',\n  'question_pADePV': 'location_country',\n  'question_1K9W2M': 'nationality',\n  'question_MOE1dY': 'right_to_work_countries',\n  'question_JRO1kJ': 'right_to_work_other',\n  'question_gA9bNN': 'instagram_url',\n  'question_yyJXq0': 'languages_spoken',\n  'question_XG45BO': 'languages_other',\n  'question_8kZNpA': 'height_cm',\n  'question_0MeVjZ': 'bust_cm',\n  'question_zz7EQ1': 'waist_cm',\n  'question_E1D6lX': 'hips_cm',\n  'question_5kZXqM': 'dress_size',\n  'question_dA9b2z': 'shoe_size_eu',\n  'question_YO4jzq': 'hair_color',\n  'question_D17qvb': 'eye_color',\n  'question_lA6al5': 'hair_texture',\n  'question_R4DWBl': 'skin_tone',\n  'question_oB29V1': 'modeling_experience',\n  'question_G1ReBj': 'experience_details',\n  'question_OP7QBK': 'currently_represented',\n  'question_Vlzp1a': 'current_agencies',\n  'question_PEzRBQ': 'was_scouted',\n  'question_E1xqbo': 'scouted_by',\n  'question_rKoDrM': 'special_skills',\n  'question_4kKaNb': 'availability',\n  'question_bkr922': 'guardian_name',\n  'question_AJDK6W': 'guardian_email',\n  'question_B1DKLA': 'guardian_phone',\n  'question_kAW90J_d18a3420-2d4d-44fd-8cdf-38d8bc9d0d33': 'guardian_consent',\n  'question_jMle9R': 'photo_headshot',\n  'question_2kKjxp': 'photo_full_body',\n  'question_xQJVNG': 'photo_profile',\n  'question_R4DWBp': 'photo_three_quarter',\n  'question_rKLYOl': 'photo_polaroid',\n  'question_vBLr0d_0bb10bdc-f15d-41dd-b574-4acf63bd2d5d': 'gdpr_consent',\n  'question_oBdxYO_db5144bf-9125-4f71-8923-536b4d6b9e6f': 'ai_consent',\n  'question_KoDePk_ce4f8f70-ab47-4ca5-9af4-10823e74710a': 'accuracy_declaration',\n};\n\nfunction resolveOptions(field) {\n  if (!field.options || !field.value) return field.value;\n  const optionMap = {};\n  field.options.forEach(o => { optionMap[o.id] = o.text; });\n  if (Array.isArray(field.value)) {\n    return field.value.map(id => optionMap[id] || id).filter(Boolean);\n  }\n  return optionMap[field.value] || field.value;\n}\n\nconst fields = $('Form Intake Trigger').first().json.body.data.fields;\nconst raw = {};\n\nfields.forEach(field => {\n  const fieldName = FIELD_MAP[field.key];\n  if (!fieldName) return;\n  if (field.type === 'FILE_UPLOAD') {\n    raw[fieldName] = Array.isArray(field.value) ? field.value : [];\n  } else if (field.type === 'DROPDOWN') {\n    raw[fieldName] = resolveOptions(field);\n    if (Array.isArray(raw[fieldName])) raw[fieldName] = raw[fieldName][0] || null;\n  } else if (field.type === 'CHECKBOXES' || field.type === 'MULTI_SELECT') {\n    raw[fieldName] = resolveOptions(field);\n  } else if (field.type === 'MULTIPLE_CHOICE') {\n    raw[fieldName] = resolveOptions(field);\n    if (Array.isArray(raw[fieldName])) raw[fieldName] = raw[fieldName][0] || null;\n  } else {\n    raw[fieldName] = field.value;\n  }\n});\n\nconst config = $('Read Agency Slug').first().json.fields;\n\nconst clean = (val) => (val || '').toString().trim();\nconst cleanLower = (val) => clean(val).toLowerCase();\nconst toFloat = (val) => { const n = parseFloat(val); return isNaN(n) ? null : n; };\nconst toBool = (val) => {\n  if (val === true || val === 'true' || val === 1) return true;\n  if (val === false || val === 'false' || val === 0) return false;\n  return null;\n};\nconst toArray = (val) => {\n  if (!val) return [];\n  if (Array.isArray(val)) return val;\n  if (typeof val === 'string') return val.split(',').map(s => s.trim()).filter(Boolean);\n  return [];\n};\nconst toDate = (val) => {\n  if (!val) return null;\n  const d = new Date(val);\n  return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0];\n};\n\nconst data = {\n  full_name:            clean(raw.full_name),\n  email:                cleanLower(raw.email),\n  phone:                clean(raw.phone),\n  date_of_birth:        toDate(raw.date_of_birth),\n  location_city:        clean(raw.location_city),\n  location_country:     clean(raw.location_country),\n  nationality:          clean(raw.nationality),\n  instagram_url:        clean(raw.instagram_url),\n  language:             'EN',\n  gender:               clean(raw.gender),\n  height_cm:            toFloat(raw.height_cm),\n  bust_cm:              toFloat(raw.bust_cm),\n  waist_cm:             toFloat(raw.waist_cm),\n  hips_cm:              toFloat(raw.hips_cm),\n  shoe_size_eu:         toFloat(raw.shoe_size_eu),\n  hair_color:           clean(raw.hair_color),\n  eye_color:            clean(raw.eye_color),\n  skin_tone:            clean(raw.skin_tone),\n  hair_texture:         clean(raw.hair_texture),\n  modeling_experience:  raw.modeling_experience === 'Yes' ? 'Yes' : 'No',\n  experience_details:   clean(raw.experience_details),\n  languages_spoken:     toArray(raw.languages_spoken),\n  special_skills:       clean(raw.special_skills),\n  right_to_work:        Array.isArray(raw.right_to_work_countries) && raw.right_to_work_countries.length > 0,\n  availability:         Array.isArray(raw.availability) ? raw.availability.join(', ') : clean(raw.availability),\n  gdpr_consent:         toBool(raw.gdpr_consent),\n  ai_consent:           toBool(raw.ai_consent),\n  guardian_consent:     toBool(raw.guardian_consent) || null,\n  consent_date:         new Date().toISOString(),\n  agency_slug:          config['Agency Slug'] || 'noir-collective-france',\n  application_source:   'tally_form',\n  platform_type:        'tally',\n  application_stage:    'processing',\n  status:               'active',\n  batch_processing_status: 'queued',\n  storage_type:         'r2',\n  is_reapplication:     false,\n  cooldown_overridden:  false,\n  analysis_run_count:   0,\n  photo_resubmission_count: 0,\n  _photos: {\n    headshot:      raw.photo_headshot      || [],\n    full_body:     raw.photo_full_body     || [],\n    profile:       raw.photo_profile       || [],\n    three_quarter: raw.photo_three_quarter || [],\n    polaroid:      raw.photo_polaroid      || [],\n  },\n};\n\nif (data.languages_spoken.includes('French'))      data.language = 'FR';\nelse if (data.languages_spoken.includes('Spanish')) data.language = 'ES';\nelse if (data.languages_spoken.includes('German'))  data.language = 'DE';\nelse if (data.languages_spoken.includes('Arabic'))  data.language = 'AR';\nelse if (data.languages_spoken.includes('Hindi'))   data.language = 'HI';\nelse                                                data.language = 'EN';\n\nconst errors = [];\nif (!data.full_name)            errors.push('full_name is required');\nif (!data.email)                errors.push('email is required');\nif (!data.email.includes('@'))  errors.push('email format invalid');\nif (!data.gender)               errors.push('gender is required');\nif (!data.date_of_birth)        errors.push('date_of_birth is required');\nif (!data.location_city)        errors.push('location_city is required');\nif (!data.location_country)     errors.push('location_country is required');\nif (data.gdpr_consent !== true) errors.push('gdpr_consent must be true — hard stop');\nif (data.ai_consent !== true)   errors.push('ai_consent must be true — hard stop');\nif (!data._photos.headshot.length) errors.push('headshot photo is required');\n\nif (errors.length > 0) {\n  throw new Error('Validation failed: ' + errors.join(' | '));\n}\n\nreturn [{ json: data }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        -272
+      ],
+      "id": "500a2164-2f4d-49c2-8b77-61948b090502",
+      "name": "Code: Parse & Validate Form Data",
+      "notesInFlow": true,
+      "notes": "Parse + validate Tally payload.  \nMaps to exact Supabase schema.\nHard stops on missing consent, missing required fields, or invalid data types."
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "intake",
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "condition": "eq",
+              "keyValue": "={{ $('Code: Parse & Validate Form Data').first().json.email }}"
+            },
+            {
+              "keyName": "phone",
+              "condition": "eq",
+              "keyValue": "={{ $('Code: Parse & Validate Form Data').first().json.phone }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        896,
+        -272
+      ],
+      "id": "6ee416d4-a071-43c5-9b41-873bbff9e040",
+      "name": "Duplicate Application Check",
+      "retryOnFail": true,
+      "notesInFlow": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      },
+      "notes": "Check if email already exists in intake table. \nReturns 0 rows if new applicant. \nReturns 1+ rows if duplicate or reapplication."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "93b2eb41-f2e9-435d-b16c-752f79879905",
+              "leftValue": "={{ $('Duplicate Application Check').first().json.intake_id }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        -272
+      ],
+      "id": "ecc9646a-ff3d-4534-bd98-340f61565022",
+      "name": "IF: New or Returning Applicant",
+      "notesInFlow": true,
+      "notes": "TRUE = new applicant, no duplicate found.\nFALSE = email or phone exists in system, \nroute to cooldown check."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "22647bf5-c404-44d9-a606-7191ef1155e1",
+              "leftValue": "={{ $('Code: Parse & Validate Form Data').first().json.gdpr_consent }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "0b8555b0-72ef-457c-9a13-466275a9eec9",
+              "leftValue": "={{ $('Code: Parse & Validate Form Data').first().json.ai_consent }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1792,
+        -272
+      ],
+      "id": "04350146-4a33-4df3-9668-baa3ad166296",
+      "name": "IF: Consent Gate",
+      "retryOnFail": true,
+      "notes": "TRUE = both GDPR and AI  consent given. Continue.\nFALSE = consent missing. Stop — cannot process."
+    },
+    {
+      "parameters": {
+        "errorMessage": "Consent not given — pipeline stopped."
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        -176
+      ],
+      "id": "1a24936e-670e-42ef-957c-26c1affdc21d",
+      "name": "Stop: Consent Missing"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b6f0e59b-d35f-4c30-ad80-182f020f40bf",
+              "leftValue": "={{ $('Code: Parse & Validate Form Data').first().json.date_of_birth }}",
+              "rightValue": "={{ DateTime.now().minus({years: 18}).toISO() }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "after"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2016,
+        -368
+      ],
+      "id": "4634db91-9a21-4b04-b47e-d8d766180287",
+      "name": "IF: Minor Flag Check",
+      "notes": "TRUE = applicant is under 18. Check guardian consent before continuing.\nFALSE = adult applicant. Continue"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7894b7c0-31f5-4697-94ac-b512ced39db5",
+              "leftValue": "= {{ $('Code: Parse & Validate Form Data').first().json.guardian_consent }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "e35de953-02df-4426-b6bd-9cc8821b296e",
+              "leftValue": "={{ $('Code: Parse & Validate Form Data').first().json.guardian_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "6e93f9fe-18e3-4f7e-944f-ec6fdfc02321",
+              "leftValue": "={{ $('Code: Parse & Validate Form Data').first().json.guardian_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "ed12305d-c9f8-4c9e-80a6-6145a2f2aab2",
+              "leftValue": "={{ $('Code: Parse & Validate Form Data').first().json.guardian_phone }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2240,
+        -448
+      ],
+      "id": "29f1ba51-954a-42a9-8807-581d0f4b09ee",
+      "name": "IF: Guardian Consent Check"
+    },
+    {
+      "parameters": {
+        "errorMessage": "\"Minor applicant: guardian fields incomplete or consent not given. Cannot process application"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        2464,
+        -496
+      ],
+      "id": "fb805819-1b46-4be2-bcd2-90b808a4d97c",
+      "name": "Stop: Minor — Guardian Check Failed",
+      "notesInFlow": true,
+      "notes": "Fires when minor applicant  has missing guardian fields or guardian consent not given"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('Code: Parse & Validate Form Data').first().json;\n\nconst batch_id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n  var r = Math.random() * 16 | 0;\n  var v = c === 'x' ? r : (r & 0x3 | 0x8);\n  return v.toString(16);\n});\n\nconst images_in_batch = \n  (data._photos.headshot.length > 0 ? 1 : 0) +\n  (data._photos.full_body.length > 0 ? 1 : 0) +\n  (data._photos.profile.length > 0 ? 1 : 0) +\n  (data._photos.three_quarter.length > 0 ? 1 : 0) +\n  (data._photos.polaroid.length > 0 ? 1 : 0);\n\nconst reapplication_eligible_date = new Date(\n  Date.now() + 180 * 24 * 60 * 60 * 1000\n).toISOString().split('T')[0];\n\nreturn [{\n  json: {\n    ...data,\n    batch_id: batch_id,\n    images_in_batch: images_in_batch,\n    reapplication_eligible_date: reapplication_eligible_date,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        -272
+      ],
+      "id": "e287e8af-8225-48f0-865f-f1b805eb04a0",
+      "name": "Code: Generate Batch ID",
+      "notes": "Generates UUID batch_id that  ties all media_forensics rows  to this intake record.\nAlso counts actual photos submitted."
+    },
+    {
+      "parameters": {
+        "tableId": "intake",
+        "dataToSend": "autoMapInputData",
+        "inputsToIgnore": "_photos"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2688,
+        -272
+      ],
+      "id": "bee2fdf9-a404-4f0e-a8f4-17dbda0c7249",
+      "name": "Write Initial Supabase Row",
+      "retryOnFail": true,
+      "notesInFlow": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      },
+      "notes": "First write to Supabase intake table.\nAutomaps all parsed form fields.\nExcludes _photos (handled separately in R2 upload node)"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Duplicate Application Check').first().json.reapplication_eligible_date }}",
+                    "rightValue": "={{ DateTime.now().toISO() }}",
+                    "operator": {
+                      "type": "dateTime",
+                      "operation": "after"
+                    },
+                    "id": "fa45e444-3f2b-4022-986f-658fb86bc9c9"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Cooldown Active — Reject"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "1bb674a8-cc91-49fe-bec0-de3a9906c733",
+                    "leftValue": "",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Reapplication Allowed"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1344,
+        -208
+      ],
+      "id": "489eb53d-20a4-405d-8761-e8a0f89a07d4",
+      "name": "Switch: Cooldown Check",
+      "notesInFlow": true,
+      "notes": "Cooldown Active -reject.\nreapplication_eligible_date  is in the future \nReapplication Allowed: cooldown expired - set flag and continue."
+    },
+    {
+      "parameters": {
+        "errorMessage": "\"Cooldown active - reapplication not yet eligible.\""
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        -304
+      ],
+      "id": "e74ab404-832c-494d-ab52-07788d64818d",
+      "name": "Stop: Cooldown Active"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('Code: Parse & Validate Form Data').first().json;\nconst existing = $('Duplicate Application Check').first().json;\n\nconst previous_count = existing.reapplication_count || 0;\n\nreturn [{\n  json: {\n    ...data,\n    is_reapplication: true,\n    reapplication_count: previous_count + 1,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        -112
+      ],
+      "id": "7d78b7ff-5bcf-4037-886a-b15faf15d481",
+      "name": "Code: Set Reapplication Flag"
+    },
+    {
+      "parameters": {
+        "jsCode": "const supabase_row = $input.first().json;\nconst form_data = $('Code: Generate Batch ID').first().json;\n\nconst intake_id = supabase_row.intake_id;\nconst batch_id = form_data.batch_id;\nconst agency_slug = form_data.agency_slug;\n\n// Read thumbnail type from CLIENT CONFIG\nconst config = $('Read Agency Slug').first().json.fields;\nconst thumbnail_photo_type = (config['Thumbnail Photo Type'] || 'headshot').toLowerCase().replace(' ', '_');\n\n// Build month prefix YYYY-MM\nconst now = new Date();\nconst month_prefix = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');\n\nconst photos = [];\nconst photoTypes = ['headshot', 'full_body', 'profile', 'three_quarter', 'polaroid'];\n\nphotoTypes.forEach(type => {\n  const photoArray = form_data._photos[type];\n  if (photoArray && photoArray.length > 0) {\n    photoArray.forEach(photo => {\n      const ext = photo.mimeType === 'image/png' ? 'png'\n                : photo.mimeType === 'image/jpeg' ? 'jpg'\n                : photo.mimeType === 'image/webp' ? 'webp'\n                : 'jpg';\n\n      const r2_object_key = `${agency_slug}/intake/talent_prism/${month_prefix}/${intake_id}/${type}_${photo.id}.${ext}`;\n\n      photos.push({\n        intake_id:                intake_id,\n        batch_id:                 batch_id,\n        agency_slug:              agency_slug,\n        photo_type:               type,\n        tally_url:                photo.url,\n        tally_id:                 photo.id,\n        file_name:                photo.name,\n        mime_type:                photo.mimeType,\n        file_size_bytes:          photo.size,\n        image_file_size_kb:       Math.round(photo.size / 1024),\n        r2_object_key:            r2_object_key,\n        is_thumbnail:             type === thumbnail_photo_type,\n        processing_status:        'pending',\n        photo_compliance_checked: false,\n        tally_submission_time:    form_data.consent_date,\n      });\n    });\n  }\n});\n\nreturn photos.map(p => ({ json: p }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2912,
+        -272
+      ],
+      "id": "49983da2-630a-42e2-9b1d-0513f360ba0a",
+      "name": "Code: Flatten Photos for Upload",
+      "notesInFlow": true,
+      "notes": "Flattens _photos object into individual items — one per photo.\nReads intake_id from Supabase output.\nBuilds R2 object key per photo.\nMarks thumbnail from CLIENT CONFIG."
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.tally_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3136,
+        -272
+      ],
+      "id": "2f24e574-f7e1-416c-ad91-1079626d3308",
+      "name": "HTTP: Download Photo from Tally",
+      "retryOnFail": true,
+      "notesInFlow": true,
+      "onError": "continueErrorOutput",
+      "notes": "Downloads photo binary from temporary Tally URL. \n Must complete before URL expires (~1hr after submission)."
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "spexecute-ts-prism-proto",
+        "fileName": "={{ $json.r2_object_key }}",
+        "additionalFields": {
+          "storageClass": "standard"
+        }
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        3360,
+        -368
+      ],
+      "id": "c0622625-56e7-4b78-ae42-16a2fa588452",
+      "name": "S3: Upload Photo to R2",
+      "retryOnFail": true,
+      "notesInFlow": true,
+      "credentials": {
+        "s3": {
+          "id": "4dbCwXXIm2jIkoEH",
+          "name": "Cloudflare R2 — Global"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "notes": "Uploads photo binary to R2 bucket.\nFile path = r2_object_key.\nContent-Type set from mime_type automatically"
+    },
+    {
+      "parameters": {
+        "errorMessage": "\"Photo download failed — Tally URL may have expired."
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        3360,
+        -176
+      ],
+      "id": "1d1b57c8-842b-4afe-86ce-01af211234fd",
+      "name": "HTTP Error Branch"
+    },
+    {
+      "parameters": {
+        "errorMessage": "Photo upload to R2 failed."
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        3584,
+        -272
+      ],
+      "id": "b06436d2-d23f-4d8a-989e-8598d7c0cce4",
+      "name": "S3 Error Branch"
+    },
+    {
+      "parameters": {
+        "tableId": "media_forensics",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "intake_id",
+              "fieldValue": "={{ $('Code: Flatten Photos for Upload').item.json.intake_id }}"
+            },
+            {
+              "fieldId": "batch_id",
+              "fieldValue": "={{ $('Code: Flatten Photos for Upload').item.json.batch_id }}"
+            },
+            {
+              "fieldId": "r2_object_key",
+              "fieldValue": "={{ $('Code: Flatten Photos for Upload').item.json.r2_object_key }}"
+            },
+            {
+              "fieldId": "storage_url",
+              "fieldValue": "={{ 'https://spexecute-ts-prism-proto.' + '8fb911303928533629b277039515d430' + '.r2.cloudflarestorage.com/' + $('Code: Flatten Photos for Upload').item.json.r2_object_key }}"
+            },
+            {
+              "fieldId": "is_thumbnail",
+              "fieldValue": "={{ $('Code: Flatten Photos for Upload').item.json.is_thumbnail }}"
+            },
+            {
+              "fieldId": "processing_status",
+              "fieldValue": "pending"
+            },
+            {
+              "fieldId": "photo_compliance_checked",
+              "fieldValue": "false"
+            },
+            {
+              "fieldId": "photo_type",
+              "fieldValue": "={{ $('Code: Flatten Photos for Upload').item.json.photo_type }}"
+            },
+            {
+              "fieldId": "image_file_size_kb",
+              "fieldValue": "={{ $('Code: Flatten Photos for Upload').item.json.image_file_size_kb }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3584,
+        -464
+      ],
+      "id": "1cd8fe12-8e74-4980-908c-479460732f2e",
+      "name": "Supabase: Write media_forensics Row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# ZONE 1 — INTAKE & VALIDATION\nTally form intake, parsing, duplicate check,\nconsent gate, minor check, Supabase write,\nR2 photo upload, media_forensics write.",
+        "height": 832,
+        "width": 4848
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -256,
+        -752
+      ],
+      "typeVersion": 1,
+      "id": "98e91bea-afe5-46d8-b2c8-ec5f751251f3",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('Code: Generate Batch ID').first().json;\nconst config = $('Read Agency Slug').first().json.fields;\nconst gender = data.gender;\n\n// ── READ THRESHOLDS FROM CONFIG ──────────────────────────────\nconst f = {\n  min_height: parseFloat(config['(F) Min Height']) || null,\n  max_height: parseFloat(config['(F) Max Height']) || null,\n  min_bust:   parseFloat(config['(F) Min Bust'])   || null,\n  max_bust:   parseFloat(config['(F) Max Bust'])   || null,\n  min_waist:  parseFloat(config['(F) Min Waist'])  || null,\n  max_waist:  parseFloat(config['(F) Max Waist'])  || null,\n  min_hips:   parseFloat(config['(F) Min Hips'])   || null,\n  max_hips:   parseFloat(config['(F) Max Hips'])   || null,\n  min_shoe:   parseFloat(config['(F) Min Shoe'])   || null,\n  max_shoe:   parseFloat(config['(F) Max Shoe'])   || null,\n  min_age:    parseFloat(config['(F) Min Age'])    || null,\n  max_age:    parseFloat(config['(F) Max Age'])    || null,\n};\n\nconst m = {\n  min_height: parseFloat(config['(M) Min Height']) || null,\n  max_height: parseFloat(config['(M) Max Height']) || null,\n  min_chest:  parseFloat(config['(M) Min Chest'])  || null,\n  max_chest:  parseFloat(config['(M) Max Chest'])  || null,\n  min_waist:  parseFloat(config['(M) Min Waist'])  || null,\n  max_waist:  parseFloat(config['(M) Max Waist'])  || null,\n  min_shoe:   parseFloat(config['(M) Min Shoe'])   || null,\n  max_shoe:   parseFloat(config['(M) Max Shoe'])   || null,\n  min_age:    parseFloat(config['(M) Min Age'])    || null,\n  max_age:    parseFloat(config['(M) Max Age'])    || null,\n};\n\nconst nb = {\n  min_height: parseFloat(config['(NB) Min Height']) || null,\n  max_height: parseFloat(config['(NB) Max Height']) || null,\n  min_waist:  parseFloat(config['(NB) Min Waist'])  || null,\n  max_waist:  parseFloat(config['(NB) Max Waist'])  || null,\n  min_shoe:   parseFloat(config['(NB) Min Shoe'])   || null,\n  max_shoe:   parseFloat(config['(NB) Max Shoe'])   || null,\n  min_age:    parseFloat(config['(NB) Min Age'])    || null,\n  max_age:    parseFloat(config['(NB) Max Age'])    || null,\n};\n\n// ── AGE CALCULATION ──────────────────────────────────────────\nconst dob = new Date(data.date_of_birth);\nconst today = new Date();\nlet age = today.getFullYear() - dob.getFullYear();\nconst mo = today.getMonth() - dob.getMonth();\nif (mo < 0 || (mo === 0 && today.getDate() < dob.getDate())) age--;\n\n// ── HELPER ───────────────────────────────────────────────────\nconst checkRange = (val, min, max, label) => {\n  const errors = [];\n  if (min !== null && val !== null && val < min)\n    errors.push(`${label} ${val} below minimum ${min}`);\n  if (max !== null && val !== null && val > max)\n    errors.push(`${label} ${val} above maximum ${max}`);\n  return errors;\n};\n\nconst errors = [];\n\n// ── FEMALE FILTERS ───────────────────────────────────────────\nif (gender === 'Female') {\n  errors.push(...checkRange(data.height_cm,    f.min_height, f.max_height, 'Height(cm)'));\n  errors.push(...checkRange(data.bust_cm,      f.min_bust,   f.max_bust,   'Bust(cm)'));\n  errors.push(...checkRange(data.waist_cm,     f.min_waist,  f.max_waist,  'Waist(cm)'));\n  errors.push(...checkRange(data.hips_cm,      f.min_hips,   f.max_hips,   'Hips(cm)'));\n  errors.push(...checkRange(data.shoe_size_eu, f.min_shoe,   f.max_shoe,   'Shoe(EU)'));\n  errors.push(...checkRange(age,               f.min_age,    f.max_age,    'Age'));\n}\n\n// ── MALE FILTERS ─────────────────────────────────────────────\nelse if (gender === 'Male') {\n  errors.push(...checkRange(data.height_cm,    m.min_height, m.max_height, 'Height(cm)'));\n  errors.push(...checkRange(data.bust_cm,      m.min_chest,  m.max_chest,  'Chest(cm)'));\n  errors.push(...checkRange(data.waist_cm,     m.min_waist,  m.max_waist,  'Waist(cm)'));\n  errors.push(...checkRange(data.shoe_size_eu, m.min_shoe,   m.max_shoe,   'Shoe(EU)'));\n  errors.push(...checkRange(age,               m.min_age,    m.max_age,    'Age'));\n}\n\n// ── NON-BINARY FILTERS ───────────────────────────────────────\nelse if (gender === 'Non Binary') {\n  errors.push(...checkRange(data.height_cm,    nb.min_height, nb.max_height, 'Height(cm)'));\n  errors.push(...checkRange(data.waist_cm,     nb.min_waist,  nb.max_waist,  'Waist(cm)'));\n  errors.push(...checkRange(data.shoe_size_eu, nb.min_shoe,   nb.max_shoe,   'Shoe(EU)'));\n  errors.push(...checkRange(age,               nb.min_age,    nb.max_age,    'Age'));\n}\n\n// ── TRANS → NON-BINARY PATH ──────────────────────────────────\nelse if (gender === 'Trans') {\n  errors.push(...checkRange(data.height_cm,    nb.min_height, nb.max_height, 'Height(cm)'));\n  errors.push(...checkRange(data.waist_cm,     nb.min_waist,  nb.max_waist,  'Waist(cm)'));\n  errors.push(...checkRange(data.shoe_size_eu, nb.min_shoe,   nb.max_shoe,   'Shoe(EU)'));\n  errors.push(...checkRange(age,               nb.min_age,    nb.max_age,    'Age'));\n}\n\n// ── PREFER NOT TO SAY → AGE CHECK ONLY ──────────────────────\nelse if (gender === 'Prefer Not to Say') {\n  const min_age = Math.min(\n    f.min_age || 99, m.min_age || 99, nb.min_age || 99\n  );\n  const max_age = Math.max(\n    f.max_age || 0, m.max_age || 0, nb.max_age || 0\n  );\n  errors.push(...checkRange(age, min_age, max_age, 'Age'));\n}\n\n// ── RESULT ───────────────────────────────────────────────────\nconst gender_not_specified = gender === 'Prefer Not to Say';\n\nif (errors.length > 0) {\n  return [{\n    json: {\n      ...data,\n      hard_filter_passed: false,\n      hard_filter_fail_reason: errors.join(' | '),\n      application_stage: 'hard_filter_fail',\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    ...data,\n    hard_filter_passed: true,\n    hard_filter_fail_reason: gender_not_specified ? 'Gender Not Specified' : null,\n    application_stage: 'screening',\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4256,
+        -464
+      ],
+      "id": "2db9870f-34f3-40b9-a319-a7e641bea444",
+      "name": "Code: Hard Filter Check"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b3fd4190-2893-412d-b611-9e5dd35703a2",
+              "leftValue": "={{ $json.hard_filter_passed }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4480,
+        -464
+      ],
+      "id": "da59ab88-5a9b-4aed-8ccc-df5d41e8d5a2",
+      "name": "IF: Hard Filter Gate",
+      "notesInFlow": true,
+      "retryOnFail": true,
+      "notes": "TRUE = passed all hard filters.\nContinue to Zone 3 Gemini scoring.\nFALSE = failed one or more filters.\nUpdate Supabase with fail reason, stop."
+    },
+    {
+      "parameters": {
+        "content": "# ZONE 2\n**Checks All hard filters set by the Modelling Agency**\n",
+        "height": 1072,
+        "width": 848
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4624,
+        -1008
+      ],
+      "typeVersion": 1,
+      "id": "37d2d463-9eb1-422d-ac8d-1a8f9df4a704",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "intake",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "intake_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Write Initial Supabase Row').first().json.intake_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "application_stage",
+              "fieldValue": "hard_filter_fail"
+            },
+            {
+              "fieldId": "hard_filter_fail_reason",
+              "fieldValue": "={{ $json.hard_filter_fail_reason }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "inactive"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        4704,
+        -368
+      ],
+      "id": "24dcfcb3-d896-4c28-8e54-32128f4b7033",
+      "name": "Supabase: Update Hard Filter Fail",
+      "retryOnFail": true,
+      "notesInFlow": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      },
+      "notes": "Updates intake row with hard filter fail reason. \nSets stage to hard_filter_fail, status inactive."
+    },
+    {
+      "parameters": {
+        "errorMessage": "\"Hard filter failed : Application Rejected.\""
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        4928,
+        -368
+      ],
+      "id": "8ccb74b1-1d66-40d4-8af0-a8e238512a8d",
+      "name": "Stop: Hard Filter Fail"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://spx-r2-signer.spexai.workers.dev/sign",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"r2_object_key\": \"{{ $('Supabase: Write media_forensics Row').item.json.r2_object_key }}\",\n  \"expiry_seconds\": 1209600\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3808,
+        -464
+      ],
+      "id": "225a9d8a-802b-4ffd-b3a6-66666332d64d",
+      "name": "HTTP: Sign R2 URL",
+      "notesInFlow": true,
+      "retryOnFail": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "9jyrtrQ9BFGn9ARq",
+          "name": "SPX-R2-Signer-Token"
+        }
+      },
+      "notes": "Calls Cloudflare Worker to generate 7-day presigned GET URL for R2 photo. "
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "media_forensics",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Supabase: Write media_forensics Row').item.json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "retool_signed_url",
+              "fieldValue": "={{ $json.retool_signed_url }}"
+            },
+            {
+              "fieldId": "retool_url_expires_at",
+              "fieldValue": "={{ $json.retool_url_expires_at }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        4032,
+        -464
+      ],
+      "id": "19aeaf2d-70d0-47d8-a525-b4a592558d10",
+      "name": "Supabase: Update Signed URL",
+      "retryOnFail": true,
+      "notesInFlow": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      },
+      "notes": "Writes retool_signed_url and retool_url_expires_at to media_forensics."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "intake",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "intake_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Write Initial Supabase Row').item.json.intake_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "batch_processing_status",
+              "fieldValue": "queued"
+            },
+            {
+              "fieldId": "application_stage",
+              "fieldValue": "processing"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        4704,
+        -560
+      ],
+      "id": "ab0cdb2a-b7dc-473b-ae29-4e0a6db43b8a",
+      "name": "Supabase: Update Queued Status",
+      "notesInFlow": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      },
+      "notes": "The application is queued to next stage"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "pTl0Nkj8ymaZIXQ1",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/pTl0Nkj8ymaZIXQ1",
+          "cachedResultName": "intake-scoring-photo-check"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "intake_id": "={{ $('Write Initial Supabase Row').item.json.intake_id }}"
+          },
+          "matchingColumns": [
+            "intake_id"
+          ],
+          "schema": [
+            {
+              "id": "intake_id",
+              "displayName": "intake_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        4928,
+        -560
+      ],
+      "id": "c4f0ed6a-5e94-47ea-8682-64f915d70422",
+      "name": "Call 'noir-collective-france-intake-scoring-photo-check'",
+      "notesInFlow": true,
+      "onError": "continueRegularOutput",
+      "notes": "Async trigger to \"noir-collective-france-intake-scoring-photo-check\"\nPasses intake_id only. Does not wait for completion.\nIf trigger fails, cron picks up queued record within 10 minutes."
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Form Intake Trigger": {
+      "main": [
+        [
+          {
+            "node": "ACK : Submission Received",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ACK : Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ACK : Unauthorized": {
+      "main": [
+        []
+      ]
+    },
+    "ACK : Submission Received": {
+      "main": [
+        [
+          {
+            "node": "Read Agency Slug",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Agency Slug": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse & Validate Form Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse & Validate Form Data": {
+      "main": [
+        [
+          {
+            "node": "Duplicate Application Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Duplicate Application Check": {
+      "main": [
+        [
+          {
+            "node": "IF: New or Returning Applicant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: New or Returning Applicant": {
+      "main": [
+        [
+          {
+            "node": "IF: Consent Gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch: Cooldown Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Consent Gate": {
+      "main": [
+        [
+          {
+            "node": "IF: Minor Flag Check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop: Consent Missing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Minor Flag Check": {
+      "main": [
+        [
+          {
+            "node": "IF: Guardian Consent Check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Generate Batch ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Guardian Consent Check": {
+      "main": [
+        [
+          {
+            "node": "Code: Generate Batch ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop: Minor — Guardian Check Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Generate Batch ID": {
+      "main": [
+        [
+          {
+            "node": "Write Initial Supabase Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: Cooldown Check": {
+      "main": [
+        [
+          {
+            "node": "Stop: Cooldown Active",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Set Reapplication Flag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Set Reapplication Flag": {
+      "main": [
+        [
+          {
+            "node": "IF: Consent Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Initial Supabase Row": {
+      "main": [
+        [
+          {
+            "node": "Code: Flatten Photos for Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Flatten Photos for Upload": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Download Photo from Tally",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Download Photo from Tally": {
+      "main": [
+        [
+          {
+            "node": "S3: Upload Photo to R2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Error Branch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "S3: Upload Photo to R2": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Write media_forensics Row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "S3 Error Branch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Write media_forensics Row": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Sign R2 URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Hard Filter Check": {
+      "main": [
+        [
+          {
+            "node": "IF: Hard Filter Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Hard Filter Gate": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Update Queued Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase: Update Hard Filter Fail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Update Hard Filter Fail": {
+      "main": [
+        [
+          {
+            "node": "Stop: Hard Filter Fail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Sign R2 URL": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Update Signed URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Update Signed URL": {
+      "main": [
+        [
+          {
+            "node": "Code: Hard Filter Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Update Queued Status": {
+      "main": [
+        [
+          {
+            "node": "Call 'noir-collective-france-intake-scoring-photo-check'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4353f8f1-c408-4165-8044-1f284321fe60",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4e6bae92b2fffd2d829302f81ac40e1b7b77354f1229f56727b9c27fa8c5a39a"
+  },
+  "id": "HGsFujNHZz5AAkXa",
+  "tags": [
+    {
+      "updatedAt": "2026-04-07T05:54:22.284Z",
+      "createdAt": "2026-04-07T05:54:22.284Z",
+      "id": "1xyV3F0vU5tED40A",
+      "name": "intake"
+    },
+    {
+      "updatedAt": "2026-04-07T05:54:12.040Z",
+      "createdAt": "2026-04-07T05:54:12.040Z",
+      "id": "3ctqgxjHRVbu8uPR",
+      "name": "noir-test"
+    },
+    {
+      "updatedAt": "2026-04-07T05:54:41.309Z",
+      "createdAt": "2026-04-07T05:54:41.309Z",
+      "id": "617SY1s5iJZzmnko",
+      "name": "noir-collective-france"
+    },
+    {
+      "updatedAt": "2026-04-07T05:54:33.816Z",
+      "createdAt": "2026-04-07T05:54:33.816Z",
+      "id": "G7U2cDrrdAaCu0BL",
+      "name": "talent-prism"
+    },
+    {
+      "updatedAt": "2026-04-07T05:54:15.456Z",
+      "createdAt": "2026-04-07T05:54:15.456Z",
+      "id": "U5Z5J0HkLxUQA5hK",
+      "name": "prototype"
+    },
+    {
+      "updatedAt": "2026-04-07T06:57:56.832Z",
+      "createdAt": "2026-04-07T06:57:56.832Z",
+      "id": "wAJsiiKAX1HZZKGW",
+      "name": "reference"
+    },
+    {
+      "updatedAt": "2026-04-07T06:58:06.901Z",
+      "createdAt": "2026-04-07T06:58:06.901Z",
+      "id": "xzkRjFgbGBkSMd3E",
+      "name": "demo"
+    }
+  ]
+}

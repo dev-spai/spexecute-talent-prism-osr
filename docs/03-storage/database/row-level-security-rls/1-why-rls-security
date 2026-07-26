@@ -1,0 +1,86 @@
+# Row Level Security (RLS)
+
+This project uses PostgreSQL Row Level Security (RLS) to control how applications interact with the database.
+
+Rather than relying on application code alone, permissions are enforced directly at the database level. Every request made to Supabase is evaluated against these policies before it is allowed to read or modify data.
+
+The reference implementation is designed for backend automation platforms such as n8n, Retool, custom web applications, and other server-side services.
+
+---
+
+# Security Architecture
+
+There are two access levels used throughout this project.
+
+| Role | Purpose |
+|------|----------|
+| anon | Standard application access used by backend services and internal tools |
+| service_role | Administrative access with unrestricted permissions |
+
+The `anon` role is intentionally limited through Row Level Security policies. It can only perform the operations explicitly allowed for each table.
+
+The `service_role` bypasses these restrictions and is intended for trusted administrative operations.
+
+---
+
+# Policy Structure
+
+Each table contains only the policies required for its workflow.
+
+Depending on the table, these policies may include:
+
+| Policy | Purpose |
+|---------|----------|
+| Read | Allows applications to retrieve records |
+| Insert | Allows creation of new records |
+| Update | Allows approved workflow fields to be modified |
+| Full Access | Administrative access for service_role |
+
+Not every table requires all policy types.
+
+---
+
+# Repository Structure
+
+Each table has its own policy file.
+
+```text
+database/
+└── policies/
+    ├── users.sql
+    ├── intake.sql
+    ├── intake_notes.sql
+    ├── media_forensics.sql
+    ├── roster.sql
+    ├── stage_history.sql
+    ├── sources.sql
+    └── export_log.sql
+```
+
+Each file contains the SQL required to recreate the Row Level Security policies for that table.
+
+---
+
+# Design Philosophy
+
+The project follows a simple principle:
+
+- Store security inside PostgreSQL.
+- Keep application logic inside workflows and services.
+- Minimize permissions wherever possible.
+- Grant unrestricted access only to trusted administrative processes.
+
+This approach allows multiple applications—including automation workflows, internal dashboards, and custom frontends—to work against the same database while maintaining consistent access rules.
+
+---
+
+# Extending the Policies
+
+When adding a new table:
+
+1. Enable Row Level Security.
+2. Create the minimum policies required for the application.
+3. Grant only the permissions necessary for that workflow.
+4. Reserve unrestricted access for the `service_role`.
+
+Keeping permissions close to the data model makes the security model easier to understand, review, and maintain.

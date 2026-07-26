@@ -1,0 +1,279 @@
+# Storage Configuration
+
+The storage configuration defines how Talent Prism stores, retrieves, and manages applicant data and media throughout the evaluation lifecycle.
+
+Storage is separated from workflow logic, allowing organizations to use different storage providers while maintaining the same processing pipeline.
+
+---
+
+# Overview
+
+The storage configuration controls:
+
+- Storage providers
+- Media storage
+- Database connections
+- Signed URLs
+- File organization
+- Retention policies
+- Access permissions
+- Archive behavior
+
+---
+
+# Storage Providers
+
+Talent Prism supports different storage backends for applicant media.
+
+Examples include:
+
+- Cloudflare R2
+- Amazon S3
+- Google Cloud Storage
+- Azure Blob Storage
+- Local Storage (Development)
+
+Example
+
+```yaml
+provider: cloudflare-r2
+```
+
+The storage provider should expose a compatible object storage interface for media uploads and retrieval.
+
+---
+
+# Bucket Configuration
+
+Applicant media is organized within a dedicated storage bucket.
+
+Example
+
+```yaml
+bucket:
+
+  name: talent-prism
+
+  region: auto
+```
+
+Organizations should isolate applicant media from unrelated application assets.
+
+---
+
+# Directory Structure
+
+Media should follow a predictable directory structure.
+
+Example
+
+```text
+/applicants/
+    applicant-id/
+        headshot.jpg
+        full-body.jpg
+        profile-left.jpg
+        profile-right.jpg
+```
+
+Consistent organization simplifies retrieval and lifecycle management.
+
+---
+
+# File Naming
+
+Uploaded files should receive unique identifiers.
+
+Example
+
+```yaml
+naming:
+
+  strategy: uuid
+
+  preserve_extension: true
+```
+
+Avoid relying on user-provided filenames.
+
+---
+
+# Signed URLs
+
+Talent Prism recommends using signed URLs instead of exposing public files.
+
+Example
+
+```yaml
+signed_urls:
+
+  enabled: true
+
+  expiration_seconds: 604800
+```
+
+Signed URLs provide temporary access for AI processing and frontend applications while keeping storage private.
+
+---
+
+# Access Control
+
+Organizations may define access policies for stored media.
+
+Example
+
+```yaml
+access:
+
+  public: false
+
+  signed_urls_only: true
+```
+
+Applicant media should not be publicly accessible.
+
+---
+
+# Database Storage
+
+Structured applicant data should be stored separately from uploaded media.
+
+Typical records include:
+
+- Applicant profile
+- Evaluation results
+- Processing status
+- Workflow history
+- Audit logs
+
+Example
+
+```yaml
+database:
+
+  provider: supabase
+```
+
+Media files should be referenced by storage paths rather than stored directly in the database.
+
+---
+
+# Metadata
+
+Additional metadata may be stored alongside uploaded files.
+
+Examples include:
+
+- Upload timestamp
+- File size
+- MIME type
+- Resolution
+- Storage path
+- Processing status
+
+Example
+
+```yaml
+metadata:
+
+  enabled: true
+```
+
+Metadata simplifies processing, debugging, and reporting.
+
+---
+
+# Retention Policy
+
+Organizations may define how long applicant media is retained.
+
+Example
+
+```yaml
+retention:
+
+  active_days: 180
+
+  archive_after_days: 365
+
+  delete_after_days: 1095
+```
+
+Retention periods should comply with applicable legal and organizational requirements.
+
+---
+
+# Archive Policy
+
+Inactive applications may be archived instead of deleted.
+
+Example
+
+```yaml
+archive:
+
+  enabled: true
+
+  move_media: true
+```
+
+Archived records remain available for audit and historical reference.
+
+---
+
+# Storage Limits
+
+Organizations may restrict uploaded media.
+
+Example
+
+```yaml
+limits:
+
+  max_file_size_mb: 20
+
+  max_files_per_application: 10
+```
+
+Storage limits help control infrastructure costs and prevent misuse.
+
+---
+
+# Backup Strategy
+
+Organizations should implement regular backups for both structured data and uploaded media.
+
+Example
+
+```yaml
+backup:
+
+  enabled: true
+
+  frequency: daily
+```
+
+Backup strategies should be tested regularly to ensure recoverability.
+
+---
+
+# Best Practices
+
+- Store media separately from structured data.
+- Use private object storage whenever possible.
+- Generate temporary signed URLs for file access.
+- Avoid exposing storage paths directly to users.
+- Organize files using predictable directory structures.
+- Apply retention policies appropriate to your organization.
+- Regularly back up both databases and object storage.
+
+---
+
+# Related Documentation
+
+- Organization Settings
+- Intake Configuration
+- AI Configuration
+- Workflow Configuration
+- Security Configuration
+- Maintenance Configuration

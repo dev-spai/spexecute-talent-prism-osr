@@ -1,0 +1,58 @@
+# Important Notice
+
+The **Client Configuration** table is a critical component of the Talent Prism platform.
+
+This table serves as the central source of truth for business rules, evaluation criteria, AI scoring configuration, workflow behaviour, and organization-specific settings. Every applicant processed by the platform relies on values stored in this table.
+
+Unlike a typical spreadsheet, this configuration is actively consumed by automation workflows, AI prompts, backend services, and the database. Changes made here take effect immediately for all future applications.
+
+## Access Control
+
+Access to this table should be limited to personnel responsible for configuring or administering the platform, such as:
+
+- Platform Administrators
+- System Administrators
+- Talent Directors
+- Operations Managers
+- Technical Administrators
+
+Recruiters, scouts, reviewers, and other day-to-day users should generally have **read-only access** or no access at all.
+
+## Before Making Changes
+
+Before modifying any value, ensure you understand:
+
+- What the field controls.
+- Which workflows depend on it.
+- Whether the change affects AI evaluation or candidate scoring.
+- Whether the change should first be tested in a development or staging environment.
+
+If you are unsure, **do not modify the value**.
+
+## Do Not
+
+The following actions may cause unexpected behaviour or workflow failures:
+
+- Renaming columns.
+- Deleting columns.
+- Deleting configuration records.
+- Changing JSON structures.
+- Changing field data types.
+- Moving or restructuring the table.
+- Modifying linked records without understanding their dependencies.
+
+Many workflows reference column names directly. Even seemingly minor changes can prevent automations from running correctly or produce incorrect candidate evaluations.
+
+## Backups
+
+Before making significant configuration changes:
+
+- Create a backup or duplicate of the table.
+- Record the reason for the change.
+- Verify the platform behaves as expected after the update.
+
+## Best Practice
+
+Treat this table as **application configuration**, not as an ordinary spreadsheet.
+
+Every record represents production configuration used by Talent Prism. Accidental edits or deletions may affect AI scoring, candidate qualification, workflow routing, and system behaviour across the platform.

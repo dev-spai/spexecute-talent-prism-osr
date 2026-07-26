@@ -1,0 +1,214 @@
+# Building a Dedicated Application or website
+
+The reference implementation included in this repository is intentionally backend-focused. Many organizations will find that integrating Talent Prism into their existing systems is sufficient.
+
+If you decide to build a dedicated application around Talent Prism, the following mockups illustrate one possible user experience. They are provided as design references rather than implementation requirements.
+
+You may share these mockups with your internal engineering team or any external development agency to accelerate the design and implementation process.
+
+The interface can be implemented using any modern frontend framework or low-code platform, including React, Next.js, Vue, Angular, FlutterFlow, Bubble, Retool, or your organization's preferred technology stack.
+
+The visual design, user experience, authentication, recruiter workflows, dashboards, reporting, notifications, and integrations are intentionally left to each organization, allowing Talent Prism to be adapted to existing operational processes rather than requiring agencies to change how they work.
+
+> [!NOTE]
+The mockups represent one possible implementation of Talent Prism. They are not required for the reference implementation and are intended only as a starting point for organizations building a production-ready application.
+>
+
+
+| Asset                                        | Image                           | Purpose                                                                                                                                                                                                                      | Used By                                |
+| -------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| `01-live-processing-dashboard.png`           | **Live Processing Dashboard**   | Real-time operational dashboard showing applicant processing status, AI evaluation progress, queue health, throughput metrics, and overall system activity. Provides operational visibility into the active intake pipeline. | Recruiters, Operations, Administrators |
+| `02-partner-intake-dashboard.png`            | **Partner Intake Dashboard**    | Displays submissions received from partner agencies, allowing recruiters to browse, filter, search, and prioritize external applicants before review.                                                                        | Recruiters, Agency Coordinators        |
+| `03-open-call-dashboard.png`                 | **Open Call Dashboard**         | Central workspace for managing applicants submitted through public casting calls or recruitment events. Includes event statistics, applicant rankings, filtering, and review progress.                                       | Recruiters, Talent Scouts              |
+| `05-review-queue.png`                        | **Review Queue**                | Primary recruiter workspace where AI-evaluated applicants are reviewed, compared, filtered, and moved through the qualification process.                                                                                     | Recruiters, Talent Scouts              |
+| `06-applicant-profile.png`                   | **Applicant Profile**           | Detailed candidate profile combining uploaded media, applicant information, AI evaluation scores, radar analysis, recruiter actions, and assessment summaries.                                                               | Recruiters                             |
+| `07-applicant-profile-expanded.png`          | **Expanded Applicant Profile**  | Enhanced media review experience with larger image previews, additional applicant photos, AI insights, and decision controls for deeper candidate evaluation.                                                                | Recruiters                             |
+| `08-post-qualification-pipeline.png`         | **Post-Qualification Pipeline** | Tracks applicants after qualification through interviews, due diligence, contract review, and final roster synchronization. Visualizes candidate progression beyond the initial AI evaluation.                               | Recruiters, Talent Managers            |
+| `09-post-qualification-pipeline-sidebar.png` | **Pipeline Workspace**          | Operational view of the recruitment pipeline with sidebar navigation, stage management, candidate summary, and workflow actions for managing recruitment progress.                                                           | Recruiters, Talent Managers            |
+| `10-image-authenticity-analysis.png`         | **Image Authenticity Analysis** | Displays AI-generated media integrity analysis including authenticity score, manipulation heatmaps, metadata inconsistencies, and recommended actions before recruiter review.                                               | Recruiters, Quality Assurance          |
+
+
+
+## Live Processing Dashboard
+
+![Live Processing Dashboard displaying applicant ingestion progress, workflow execution, and processing status.](../../assets/frontend/01-live-processing-dashboard.png)
+
+Purpose
+
+Provides operational visibility into the applicant processing pipeline as submissions move through AI evaluation.
+
+Key Features
+
+Live workflow progress
+Processing queue
+AI evaluation status
+Applicant scores
+System health
+Throughput metrics
+Processing statistics
+
+Primary Users
+
+Operations teams
+Recruiters
+Platform administrators
+
+
+## Partner Intake Dashboard
+
+![Partner Intake Dashboard for managing agency-specific applicant submissions and intake sources.](../../assets/frontend/02-partner-intake-dashboard.png)
+
+Purpose
+
+Displays submissions received from partner agencies or external talent partners.
+
+Recruiters can browse incoming applicants, filter submissions, and prioritize candidates before they enter the primary evaluation pipeline.
+
+Key Features
+
+Partner agency submissions
+Agency filtering
+Country filtering
+Search
+Ranking
+Candidate prioritization
+
+
+## Open Call Dashboard
+
+![Open Call Dashboard displaying applicants submitted through public casting calls.](../../assets/frontend/03-open-call-dashboard.png)
+
+Purpose
+
+Manages applicants submitted through public casting calls and recruitment events.
+
+The dashboard provides recruiters with an overview of event participation, submission progress, applicant rankings, and filtering capabilities.
+
+Key Features
+
+Event statistics
+Applicant ranking
+Filtering
+Search
+Pagination
+Review progress
+
+## Review Queue
+
+![Review Queue showing applicants awaiting human review after automated AI evaluation.](../../assets/frontend/05-review-queue.png)
+
+Purpose
+
+Central workspace for recruiter decision making.
+
+Applicants are presented alongside AI-generated scores and supporting information, allowing recruiters to quickly qualify, waitlist, or reject submissions.
+
+Key Features
+
+AI ranking
+Candidate comparison
+Search
+Filtering
+Review workflow
+Priority management
+
+
+## Applicant Profile
+
+![Applicant profile page displaying structured candidate information, AI analysis, and uploaded media.](../../assets/frontend/06-applicant-profile.png)
+
+Purpose
+
+Provides a complete view of an individual applicant.
+
+This page combines uploaded media, applicant information, AI evaluation results, recruiter notes, and decision actions into a single interface.
+
+Key Features
+
+Applicant profile
+Image gallery
+AI radar chart
+Attribute scores
+Recruiter actions
+AI assessment
+Metadata
+
+
+## Expanded Applicant Profile
+
+![Expanded applicant profile showing detailed evaluation, AI insights, media analysis, and review history.](../../assets/frontend/07-applicant-profile-expanded.png)
+
+Purpose
+
+Allows recruiters to inspect uploaded media in greater detail while reviewing AI-generated evaluations.
+
+The expanded view supports deeper candidate analysis without leaving the review workflow.
+
+Key Features
+
+High-resolution media
+Multiple uploaded photos
+AI score visualization
+Attribute breakdown
+Decision actions
+
+
+## Image Authenticity Analysis
+
+![Image authenticity analysis displaying AI-generated media forensics and manipulation detection results.](../../assets/frontend/10-image-authenticity-analysis.png)
+
+Purpose
+
+Displays the results of AI-powered media integrity analysis.
+
+Potential image manipulation, AI generation, metadata inconsistencies, and authenticity concerns are surfaced before recruiter review.
+
+Key Features
+
+Authenticity score
+Heatmap visualization
+Manipulation indicators
+Metadata analysis
+AI-generated risk
+Recommended action
+
+
+## Post-Qualification Pipeline
+
+![Pipeline management view for qualified applicants progressing through recruitment stages.](../../assets/frontend/08-post-qualification-pipeline.png)
+
+Purpose
+
+Tracks applicants after they have successfully passed the initial AI evaluation and recruiter review.
+
+Recruiters can monitor every stage of the recruitment lifecycle until onboarding or roster placement.
+
+Typical stages include:
+
+Interview
+Test Shoot
+Due Diligence
+Contract Review
+Signing
+Roster Synchronization
+
+
+## Pipeline Workspace
+
+![Pipeline workspace sidebar showing recruitment stages and applicant navigation.](../../assets/frontend/09-post-qualification-pipeline-sidebar.png)
+
+Purpose
+
+Provides an operational view of the post-qualification recruitment pipeline.
+
+Recruiters can monitor candidate progress, update pipeline stages, assign actions, and coordinate the recruitment process through to completion.
+
+Design Principles
+
+The frontend is designed around several principles:
+
+AI-Assisted Decision Making — AI provides recommendations while recruiters retain final decision authority.
+Workflow Visibility — Every applicant's progress is visible throughout the recruitment lifecycle.
+Centralized Information — Applicant data, AI evaluations, media, and recruiter actions are presented in a single interface.
+Operational Efficiency — Search, filtering, ranking, and pipeline management reduce manual administrative work.
+Scalability — The interface is designed to support high-volume recruitment workflows across multiple organizations.

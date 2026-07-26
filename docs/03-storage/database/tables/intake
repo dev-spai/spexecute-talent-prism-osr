@@ -1,0 +1,290 @@
+**Purpose**
+
+The `intake` table is the central record for every applicant. It stores the complete lifecycle of a submission—from application intake through AI analysis, workflow management, scouting, ranking, and final decision.
+
+---
+
+# 1. Identity & Contact
+
+| Column | Meaning |
+| --- | --- |
+| `intake_id` | Unique applicant ID (UUID). |
+| `full_name` | Applicant's full name. |
+| `email` | Primary email address. |
+| `phone` | Contact phone number. |
+| `date_of_birth` | Applicant's date of birth. |
+| `age_at_application` | Age calculated at submission time. |
+| `minor_flag` | Indicates whether the applicant is legally a minor. |
+| `guardian_consent` | Parent/guardian consent for minors. |
+
+---
+
+# 2. Location & Social
+
+| Column | Meaning |
+| --- | --- |
+| `location_city` | Applicant's city. |
+| `location_country` | Applicant's country. |
+| `instagram_url` | Instagram profile link. |
+| `language` | Primary language. |
+| `languages_spoken` | Additional spoken languages. |
+| `nationality` | Applicant nationality. |
+
+---
+
+# 3. Application Information
+
+| Column | Meaning |
+| --- | --- |
+| `application_date` | Submission timestamp. |
+| `application_source` | Source of the application (email, form, scout, etc.). |
+| `platform_type` | Platform where application originated. |
+| `source_id` | Foreign key to the `sources` table. |
+| `agency_slug` | Agency or tenant identifier. |
+| `is_reapplication` | Whether this is a repeat application. |
+| `reapplication_count` | Number of previous applications. |
+| `reapplication_eligible_date` | Date applicant becomes eligible to apply again. |
+
+---
+
+# 4. Consent & Compliance
+
+| Column | Meaning |
+| --- | --- |
+| `ai_consent` | Consent for AI analysis. |
+| `gdpr_consent` | GDPR consent status. |
+| `consent_date` | Date consent was recorded. |
+
+---
+
+# 5. Workflow Status
+
+| Column | Meaning |
+| --- | --- |
+| `application_stage` | Current processing stage. |
+| `status` | Overall application status. |
+| `previous_stage` | Previous workflow stage. |
+| `stage_updated_at` | Last stage update timestamp. |
+| `stage_updated_by` | User who updated the stage. |
+| `assigned_to` | Assigned reviewer/scout. |
+| `first_assigned_to` | First reviewer assigned. |
+
+---
+
+# 6. Outcome
+
+| Column | Meaning |
+| --- | --- |
+| `outcome` | Final application outcome. |
+| `outcome_date` | Date of final decision. |
+| `pipeline_duration_days` | Days spent in the pipeline. |
+| `rejection_reason` | Reason for rejection. |
+| `waitlist_position` | Waitlist order. |
+| `deferred_until` | Deferred review date. |
+
+---
+
+# 7. Development & Follow-up
+
+| Column | Meaning |
+| --- | --- |
+| `development_candidate` | Marked for future development. |
+| `development_notes` | Internal notes. |
+| `follow_up_date` | Scheduled follow-up. |
+
+---
+
+# 8. Escalation
+
+| Column | Meaning |
+| --- | --- |
+| `escalated` | Escalation flag. |
+| `escalated_by` | User who escalated. |
+| `escalated_date` | Escalation timestamp. |
+| `escalated_to` | Target reviewer/team. |
+| `escalated_at` | Time escalated. |
+| `escalation_note` | Reason for escalation. |
+
+---
+
+# 9. Scout Management
+
+| Column | Meaning |
+| --- | --- |
+| `scout_assigned` | Assigned scout. |
+| `scout_notes` | Internal scouting notes. |
+| `was_scouted` | Whether applicant was scouted. |
+| `scouted_by` | Scout identifier. |
+
+---
+
+# 10. Communication
+
+| Column | Meaning |
+| --- | --- |
+| `acknowledgement_sent` | Confirmation email sent. |
+| `rejection_email_sent` | Rejection email sent. |
+| `outreach_attempts` | Number of outreach attempts. |
+| `applicant_response_status` | Applicant response status. |
+
+---
+
+# 11. Contract Status
+
+| Column | Meaning |
+| --- | --- |
+| `model_signed` | Whether the applicant signed. |
+| `model_signed_date` | Signature date. |
+| `model_signed_by` | User who recorded signature. |
+
+---
+
+# 12. Candidate Profile
+
+| Column | Meaning |
+| --- | --- |
+| `gender` | Declared gender. |
+| `height_cm` | Height in centimeters. |
+| `bust_cm` | Bust measurement. |
+| `waist_cm` | Waist measurement. |
+| `hips_cm` | Hip measurement. |
+| `shoe_size_eu` | EU shoe size. |
+| `hair_color` | Hair color. |
+| `hair_texture` | Hair texture. |
+| `eye_color` | Eye color. |
+| `skin_tone` | Skin tone. |
+| `availability` | Availability for work. |
+| `special_skills` | Special skills. |
+| `modeling_experience` | Prior experience flag. |
+| `experience_details` | Experience description. |
+| `currently_represented` | Already represented by another agency. |
+| `current_agencies` | Existing agencies. |
+| `right_to_work` | Work authorization. |
+| `right_to_work_countries` | Countries authorized to work in. |
+
+---
+
+# 13. AI Image Processing
+
+| Column | Meaning |
+| --- | --- |
+| `images_in_batch` | Number of uploaded images. |
+| `batch_processing_status` | Current AI pipeline stage. |
+| `batch_id` | Processing batch identifier. |
+| `analysis_run_count` | Number of AI analysis attempts. |
+
+---
+
+# 14. Image Storage
+
+| Column | Meaning |
+| --- | --- |
+| `storage_type` | Storage provider (R2, Drive, etc.). |
+| `photo_head_url` | Headshot URL. |
+| `photo_body_url` | Full-body photo URL. |
+| `photo_profile_url` | Profile photo URL. |
+
+---
+
+# 15. Photo Quality
+
+| Column | Meaning |
+| --- | --- |
+| `photo_quality_status` | Photo validation status. |
+| `photo_quality_score` | Overall photo quality score. |
+| `photo_instruction_sent` | Improvement request sent. |
+| `photo_instruction_sent_at` | Timestamp of request. |
+| `photo_resubmission_count` | Number of resubmissions. |
+
+---
+
+# 16. AI Structural Analysis
+
+This section stores facial and body measurements extracted by the AI system.
+
+| Column | Meaning |
+| --- | --- |
+| `structural_score` | Overall structural score. |
+| `symmetry_score` | Facial symmetry score. |
+| `symmetry_variance` | Symmetry variance. |
+| `memorability_index` | Distinctiveness estimate. |
+| `zygomatic_ratio` | Cheekbone ratio. |
+| `razor_jaw_angle` | Jaw angle measurement. |
+| `supraorbital_ridge_score` | Brow ridge estimate. |
+| `facial_thirds_balance` | Facial thirds balance. |
+| `cheek_to_jaw_ratio` | Cheek-to-jaw proportion. |
+| `interpupillary_index` | Eye spacing index. |
+| `overall_body_proportion` | Overall body proportion score. |
+| `height_to_torso_ratio` | Height-to-torso ratio. |
+| `jaw_definition` | Jawline definition. |
+| `cheekbone_structure` | Cheekbone prominence. |
+| `jawline_squareness` | Jaw squareness estimate. |
+| `brow_ridge_strength` | Brow ridge estimate. |
+| `neck_definition` | Neck definition. |
+| `shoulder_to_waist_ratio` | Shoulder-to-waist ratio. |
+| `shoulder_to_hip_ratio` | Shoulder-to-hip ratio. |
+| `leg_to_body_ratio` | Leg-to-body ratio. |
+| `androgyny_score` | Androgyny score. |
+
+---
+
+# 17. AI Aesthetic Analysis
+
+| Column | Meaning |
+| --- | --- |
+| `aesthetic_category` | Assigned aesthetic category. |
+| `aesthetic_sub_type` | Sub-category. |
+| `aesthetic_score` | Overall aesthetic score. |
+| `brand_fit` | Suggested brand categories. |
+| `brand_reasoning` | AI explanation. |
+| `primary_market` | Recommended market. |
+| `secondary_market` | Secondary market. |
+| `primary_agency_fit_category` | Best agency category. |
+| `booking_potential` | Estimated booking potential. |
+| `final_agency_score` | Overall agency score. |
+| `ranking_confidence` | Confidence level. |
+| `score_reasoning` | Explanation for score. |
+| `final_verdict` | AI recommendation. |
+| `stage2_analysis` | Extended AI analysis (JSON). |
+| `active_category_scores` | Per-category scores (JSON). |
+| `structural_confidence` | Confidence in structural analysis. |
+
+---
+
+# 18. Fraud & Quality Checks
+
+| Column | Meaning |
+| --- | --- |
+| `highest_fraud_risk` | Highest fraud risk detected. |
+| `fraud_flag_summary` | List of fraud indicators. |
+| `visual_summary` | AI-generated visual summary. |
+| `hard_filter_fail_reason` | Automatic rejection reason. |
+
+---
+
+# 19. Queue & Open Calls
+
+| Column | Meaning |
+| --- | --- |
+| `open_call_status` | Open call status. |
+| `open_call_invitation_sent` | Invitation sent. |
+| `open_call_invitation_sent_at` | Invitation timestamp. |
+| `moved_to_queue` | Queue transfer flag. |
+| `moved_to_queue_by` | User who moved it. |
+| `moved_to_queue_at` | Transfer timestamp. |
+| `moved_to_queue_from` | Previous queue. |
+
+---
+
+# 20. Flags & Auditing
+
+| Column | Meaning |
+| --- | --- |
+| `flagged` | Manual flag. |
+| `flagged_by` | User who flagged. |
+| `flagged_at` | Timestamp. |
+| `flag_reason` | Reason for flagging. |
+| `last_updated` | Last modification timestamp. |
+| `cooldown_overridden` | Cooldown bypassed. |
+| `cooldown_overridden_by` | User who bypassed it. |
+| `cooldown_overridden_at` | Timestamp of override. |

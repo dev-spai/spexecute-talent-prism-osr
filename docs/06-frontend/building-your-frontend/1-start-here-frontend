@@ -1,0 +1,95 @@
+## Building Your Frontend
+
+```
+Talent Prism is frontend-agnostic.
+
+The reference implementation demonstrates the complete applicant processing pipeline, but it does not prescribe how organizations should present or consume the resulting data.
+
+You are free to build any interface that best fits your existing technology stack and operational workflows.
+```
+
+### Example Frontend Technologies
+
+```
+• Retool
+• React
+• Next.js
+• Vue
+• Angular
+• Bubble
+• FlutterFlow
+• Lovable
+• Internal CRM
+• Existing Talent Management Platform
+• Custom Admin Dashboard
+```
+
+---
+
+## Integrating with Existing Systems
+
+```
+Organizations that already operate a talent management system do not need to replace it.
+
+Talent Prism can serve as an AI-powered intake and evaluation layer, with applicant data and evaluation results synchronized into existing platforms after processing.
+```
+
+Possible destinations include:
+
+```
+• Talent Management System
+• Agency CRM
+• Internal Database
+• Spreadsheet (Excel / Google Sheets)
+• Airtable
+• Supabase
+• PostgreSQL
+• Data Warehouse
+• Business Intelligence Platform
+• Internal APIs
+```
+
+---
+
+## Consuming Evaluation Results
+
+```
+After processing completes, Talent Prism produces structured evaluation data that can be consumed by downstream applications.
+
+Examples include:
+
+• Structural scores
+• Visual assessment
+• Agency fit categories
+• Confidence scores
+• Photo quality assessment
+• Applicant metadata
+• Processing status
+```
+
+Organizations may:
+
+- Display results in a recruiter dashboard
+- Synchronize results with an existing talent management platform
+- Export results to spreadsheets
+- Build custom reporting
+- Feed the data into internal automation or analytics systems
+
+---
+
+Frontend
+
+## What's Included
+
+```
+This repository provides the reference implementation for:
+
+✓ Applicant intake
+✓ Media storage
+✓ AI-powered evaluation
+✓ Structured scoring
+✓ Secure media access
+✓ Workflow automation
+
+Building the final user experience—including recruiter dashboards, applicant portals, analytics, notifications, and integrations with existing systems—is intentionally left to the adopting organization.
+```

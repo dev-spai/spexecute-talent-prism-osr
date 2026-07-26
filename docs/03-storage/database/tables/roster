@@ -1,0 +1,237 @@
+## Purpose
+
+Stores active talent that has successfully progressed through the intake and evaluation process. Once an applicant is signed, their core information is promoted from the intake pipeline into the roster, where contract details, representation information, career progression, and ongoing talent management are maintained.
+
+The roster serves as the agency's operational database for managing represented talent.
+
+---
+
+# Table Relationships
+
+| Relationship | Description |
+| --- | --- |
+| `intake_id` → `intake.intake_id` | Each roster profile originates from a successfully signed applicant. |
+| One intake | Can have only one roster profile (enforced by a unique constraint). |
+
+---
+
+# Columns
+
+## Identity
+
+| Column | Meaning |
+| --- | --- |
+| `id` | Unique roster record identifier (UUID). |
+| `intake_id` | Original applicant record from which this talent profile was created. |
+| `full_name` | Talent's full legal or professional name. |
+
+---
+
+## Contact Information
+
+| Column | Meaning |
+| --- | --- |
+| `active_email` | Primary contact email for the represented talent. |
+| `active_phone` | Primary contact phone number. |
+| `instagram_url` | Active Instagram profile. |
+
+---
+
+## Basic Profile
+
+| Column | Meaning |
+| --- | --- |
+| `age_at_application` | Age when originally applying. |
+| `minor_flag` | Indicates whether the talent was a minor at application. |
+| `nationality` | Nationality of the talent. |
+| `languages_spoken` | Languages spoken. |
+| `right_to_work` | Indicates whether the talent has work authorization. |
+
+---
+
+# Representation Status
+
+| Column | Meaning |
+| --- | --- |
+| `global_status` | Overall representation status (e.g., Active, Inactive). |
+| `career_stage` | Current stage of the model's career (e.g., New Face, Development, Established). |
+| `agent_assigned` | Agent responsible for managing the talent. |
+| `agent_notes` | Internal notes maintained by the assigned agent. |
+| `mother_agency` | Original or mother agency if applicable. |
+
+---
+
+# Contract Management
+
+| Column | Meaning |
+| --- | --- |
+| `signed_date` | Date representation officially began. |
+| `model_signed_date` | Date the model agreement was signed. |
+| `model_signed_by` | User who confirmed the signing. |
+| `contract_start_date` | Contract start date. |
+| `contract_expiry_date` | Contract expiration date. |
+| `contract_status` | Current contract status. |
+| `exclusivity_status` | Exclusivity arrangement. |
+| `commission_rate` | Agency commission percentage. |
+
+---
+
+# Physical Attributes
+
+| Column | Meaning |
+| --- | --- |
+| `height_cm` | Height in centimeters. |
+| `measurements` | Professional body measurements. |
+| `shoe_size` | Shoe size. |
+| `dress_size` | Dress size. |
+| `hair_color` | Hair color. |
+| `hair_texture` | Hair texture. |
+| `eye_color` | Eye color. |
+| `skin_tone` | Skin tone. |
+| `tattoos` | Indicates whether visible tattoos exist. |
+| `tattoo_notes` | Description or location of tattoos. |
+
+---
+
+# Profile Maintenance
+
+| Column | Meaning |
+| --- | --- |
+| `stats_last_updated` | Date physical statistics were last verified. |
+| `stats_freshness` | Indicates how current the recorded measurements are. |
+
+---
+
+# AI Talent Intelligence
+
+| Column | Meaning |
+| --- | --- |
+| `aesthetic_category` | Primary aesthetic classification. |
+| `primary_market` | Recommended target market. |
+| `secondary_market` | Secondary recommended market. |
+| `brand_category_fit` | Brands or campaign categories the talent is suited for. |
+| `versatility_flag` | AI assessment of versatility across commercial categories. |
+| `spex_rank_score` | Internal AI ranking score. |
+| `structural_score` | Structural facial/body assessment score. |
+| `memorability_index` | Estimated memorability score. |
+| `androgyny_score` | AI-estimated androgyny score. |
+| `highest_fraud_risk` | Highest fraud risk identified during intake. |
+| `gemini_summary` | AI-generated talent summary. |
+
+---
+
+# Brand Intelligence
+
+| Column | Meaning |
+| --- | --- |
+| `brand_suitability` | AI summary of brand compatibility. |
+| `brand_analysis_status` | Status of brand analysis workflow. |
+| `brand_suitability_date` | Timestamp of latest brand analysis. |
+
+---
+
+# Portfolio & Assets
+
+| Column | Meaning |
+| --- | --- |
+| `storage_folder_link` | Storage location containing portfolio images and supporting assets. |
+
+---
+
+# Digital Representation
+
+| Column | Meaning |
+| --- | --- |
+| `digital_twin_consent` | Consent to create AI or digital representations of the talent. |
+| `likeness_license_active` | Indicates whether digital likeness licensing is active. |
+
+---
+
+# Experience & Skills
+
+| Column | Meaning |
+| --- | --- |
+| `modeling_experience` | Indicates previous professional modeling experience. |
+| `experience_details` | Details of prior experience. |
+| `special_skills` | Additional professional skills (e.g., acting, dancing, sports). |
+| `availability` | Structured availability information stored as JSON. |
+
+---
+
+# Audit
+
+| Column | Meaning |
+| --- | --- |
+| `created_at` | Timestamp when the roster record was created. |
+
+---
+
+# Constraints
+
+## Primary Key
+
+```
+id
+```
+
+---
+
+## Foreign Key
+
+```
+intake_id
+    ↓
+intake.intake_id
+```
+
+Every roster record originates from a valid intake record.
+
+---
+
+## Unique Constraint
+
+```
+intake_id
+```
+
+An applicant can only become an active roster member once, preventing duplicate talent profiles.
+
+---
+
+# Typical Workflow
+
+```
+Applicant submits application
+        │
+        ▼
+AI Evaluation
+        │
+        ▼
+Manual Review
+        │
+        ▼
+Offer Representation
+        │
+        ▼
+Contract Signed
+        │
+        ▼
+Create Roster Record
+        │
+        ▼
+Talent Management
+        │
+        ▼
+Career Progression
+```
+
+---
+
+# Common Use Cases
+
+- Maintain an agency's active talent roster.
+- Manage contracts and representation status.
+- Track career progression from new face to established talent.
+- Store AI-generated talent intelligence for casting and brand matching.
+- Manage portfolio assets and digital representation rights.
+- Support agent assignment and ongoing talent development.

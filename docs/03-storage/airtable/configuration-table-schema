@@ -1,0 +1,121 @@
+# Client Configuration Schema
+
+This table contains all business rules used by Talent Prism to evaluate applicants. Every row represents one organization, agency, or brand. Before an application is processed, the platform loads the corresponding configuration profile and uses these values throughout the AI evaluation, scoring, ranking, qualification, and workflow pipeline.
+
+| Column | Example | What this column contains |
+| --- | --- | --- |
+| Agency Name | `Noir Collective [TEST]` | Display name of the organization, agency, or brand. |
+| Client Registry Link | `Noir Collective [TEST]` | Link/reference to the organization's master record in the Client Registry. |
+| SPEX UUID (from Client Registry Link) | `spx-noir-collective-france-1` | Internal unique identifier used across the platform. |
+| Agency Slug | `noir-collective-france` | URL-safe identifier used by APIs, workflows, and database lookups. |
+| Structural Weight | `0.45` | Overall weighting given to structural analysis when calculating the final score. |
+| Aesthetic Weight | `0.40` | Overall weighting given to aesthetic analysis. |
+| Photo Quality Weight | `0.15` | Weight assigned to image quality during evaluation. |
+| Measurement Unit | `Metric (cm/kg)` | Unit system used for body measurements. |
+| Dress/Shoe Size Units | `EU` | Clothing and footwear sizing standard. |
+| Agency Description | `Elite editorial and high-fashion boutique agency...` | Description of the organization used for AI context. |
+| Monthly Application Volume | `250` | Estimated number of monthly applications received. |
+| Current Intake Process | `Manual email review and spreadsheet tracking` | Existing recruitment workflow before Talent Prism. |
+| Aesthetic Categories | `Avant-Garde, Editorial/High Fashion` | Primary modelling categories recruited by the organization. |
+| Primary Markets (City) | `Paris, Milan, London` | Primary cities or markets served by the organization. |
+| Ideal Model Description | `Sharp geometry, unconventional features...` | Detailed description of the ideal candidate profile. |
+| Agency Known For | `Avant-garde editorial, Paris runway` | Summary of the organization's reputation and specialization. |
+| Never Signs | `Commercial, lifestyle, fitness...` | Candidate profiles that should generally be rejected. |
+| (U) Face Symmetry Importance | `0.70` | Importance of facial symmetry for all applicants. |
+| (U) Facial Proportions Importance | `1.00` | Importance of facial proportions. |
+| (U) Memorability Importance | `1.00` | Importance of uniqueness and memorability. |
+| (U) Eye Spacing Importance | `0.70` | Weight assigned to eye spacing. |
+| (U) Body Proportions Importance | `1.00` | Importance of overall body proportions. |
+| (U) Androgyny Score Importance | `1.00` | Importance of androgynous characteristics. |
+| (F) Jaw Definition Importance | `1.00` | Importance of jaw definition for female applicants. |
+| (F) Cheekbone Structure Importance | `1.00` | Importance of cheekbone structure for female applicants. |
+| (F) Brow Bone Importance | `0.70` | Importance of brow bone prominence for female applicants. |
+| (F) Smile Width Importance | `0.30` | Importance of smile width. |
+| (F) Clavicle Shoulder Line Importance | `0.70` | Importance of clavicle and shoulder line. |
+| (F) Leg to Body Ratio Importance | `0.70` | Importance of leg-to-body proportions. |
+| (M) Jawline Squareness Importance | `0.70` | Importance of jawline squareness for male applicants. |
+| (M) Brow Ridge Strength Importance | `0.70` | Importance of brow ridge definition. |
+| (M) Shoulder to Waist Ratio Importance | `1.00` | Importance of shoulder-to-waist ratio. |
+| (M) Neck Definition Importance | `0.30` | Importance of neck definition. |
+| (M) Facial Hair Versatility Importance | `0.00` | Importance of adaptability with facial hair. |
+| (M) Hand Vein Definition Importance | `0.00` | Importance of visible hand vein definition. |
+| (M) Height to Torso Ratio Importance | `0.70` | Importance of height-to-torso proportions. |
+| (F) Min Height | `175` | Minimum accepted female height. |
+| (F) Max Height | `185` | Maximum accepted female height. |
+| (M) Min Height | `185` | Minimum accepted male height. |
+| (M) Max Height | `198` | Maximum accepted male height. |
+| (NB) Min Height | `172` | Minimum accepted non-binary height. |
+| (NB) Max Height | `195` | Maximum accepted non-binary height. |
+| (F) Min Age | `16` | Minimum female applicant age. |
+| (F) Max Age | `28` | Maximum female applicant age. |
+| (M) Min Age | `17` | Minimum male applicant age. |
+| (M) Max Age | `32` | Maximum male applicant age. |
+| (NB) Min Age | `16` | Minimum non-binary applicant age. |
+| (NB) Max Age | `30` | Maximum non-binary applicant age. |
+| Gender Filter | `Female,Male` | Genders accepted by the organization. |
+| Accepts Minor Applications | `checked` | Whether applicants under 18 are allowed. |
+| Minor Min Age | `16` | Minimum age for minor applicants. |
+| Minor Max Age | `17` | Maximum age classified as a minor. |
+| Minor Guardian Consent Required | `checked` | Whether guardian consent is mandatory. |
+| Photo Requirements | `Headshot, Full Body, Profile...` | Instructions describing required applicant photographs. |
+| Additional Hard Rules | `No commercial portfolio history...` | Mandatory business rules enforced during qualification. |
+| Fraud Tolerance | `Flag and Show to Scout` | Action taken when fraud indicators are detected. |
+| Rank Label Tier 1 | `Priority` | Highest ranking label. |
+| Rank Label Tier 2 | `Strong Consider` | Second ranking label. |
+| Rank Label Tier 3 | `Development` | Third ranking label. |
+| Rank Label Tier 4 | `Pass` | Lowest ranking label. |
+| Score Naming Convention | `SPeX Noir Rank` | Display name used for candidate scores. |
+| Aesthetic Profile Notes | `Androgynous-leaning high fashion editorial...` | Long-form notes describing the organization's aesthetic preferences. |
+| Brand Relationships | `Rick Owens, Prada, Loewe...` | Brands and clients associated with the organization. |
+| Custom Hard Filter Notes | `Female bust 78-90cm...` | Additional business-specific qualification rules. |
+| Metric Weights JSON | `{ "face_symmetry":0.7, ... }` | JSON object containing weights for every evaluation metric. |
+| Aesthetic Category Weights JSON | `{ "editorial":1.0, "runway":1.0 ... }` | JSON defining weighting for each modelling category. |
+| Market Demand JSON | `{ ... }` | Optional JSON describing market demand adjustments used during scoring. |
+| Photo Types Accepted | `Headshot, Full Body, Profile...` | Accepted photograph categories for applications. |
+| Thumbnail Photo Type | `Headshot` | Photo type used as the default thumbnail. |
+| Data Retention Days | `365` | Number of days applicant data is retained. |
+| Data Retention Policy | `Retain all applicant data for 365 days...` | Human-readable data retention policy. |
+| Post Qualified Stages | `Qualified → Interview → Signed` | Workflow stages after qualification. |
+| Reapplication Attempt Gap Days | `180` | Minimum number of days before reapplying. |
+| assignment_method | `territory` | Strategy used to assign qualified applicants to scouts or recruiters. |
+| rank_structural_weight | `0.50` | Weight of structural score during final ranking. |
+| rank_aesthetic_weight | `0.40` | Weight of aesthetic score during final ranking. |
+| rank_market_weight | `0.20` | Weight of market demand during final ranking. |
+| (F) Min Bust | `78` | Minimum accepted bust measurement. |
+| (F) Max Bust | `90` | Maximum accepted bust measurement. |
+| (F) Min Waist | `58` | Minimum accepted female waist measurement. |
+| (F) Max Waist | `66` | Maximum accepted female waist measurement. |
+| (F) Min Hips | `85` | Minimum accepted hip measurement. |
+| (F) Max Hips | `96` | Maximum accepted hip measurement. |
+| (M) Min Waist | `76` | Minimum accepted male waist measurement. |
+| (M) Max Waist | `86` | Maximum accepted male waist measurement. |
+| (NB) Min Waist | `60` | Minimum accepted non-binary waist measurement. |
+| (NB) Max Waist | `80` | Maximum accepted non-binary waist measurement. |
+| (F) Min Shoe | `38` | Minimum accepted female shoe size. |
+| (F) Max Shoe | `42` | Maximum accepted female shoe size. |
+| (M) Min Shoe | `42` | Minimum accepted male shoe size. |
+| (M) Max Shoe | `46` | Maximum accepted male shoe size. |
+| (NB) Min Shoe | `37` | Minimum accepted non-binary shoe size. |
+| (NB) Max Shoe | `45` | Maximum accepted non-binary shoe size. |
+| (M) Min Chest | `92` | Minimum accepted male chest measurement. |
+| (M) Max Chest | `104` | Maximum accepted male chest measurement. |
+| Scoring Anchors JSON | `{ "editorial": { "95_plus": ... } }` | JSON defining qualitative descriptions for each score band used by the AI. |
+| Scoring Profile | `Structural Heavy` | Name of the overall scoring strategy applied during evaluation. |
+
+## ⚠️ Important
+
+This table is directly connected to the Talent Prism platform.
+
+Every automation workflow, AI prompt, scoring engine, and qualification process depends on the values stored here. Changes made to this table immediately affect how future applications are evaluated.
+
+Only Platform Administrators, Operations Managers, Talent Directors, or Technical Administrators should modify this configuration.
+
+Avoid:
+
+- Renaming existing columns.
+- Deleting columns referenced by workflows.
+- Changing the structure of JSON fields.
+- Modifying scoring weights without understanding their impact.
+- Editing production values without testing in a development environment.
+
+The configuration table is the single source of truth for business rules. Treat it as production infrastructure rather than a simple spreadsheet.

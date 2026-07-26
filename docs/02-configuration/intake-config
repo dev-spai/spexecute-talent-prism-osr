@@ -1,0 +1,376 @@
+# Intake Configuration
+
+The intake configuration defines how Talent Prism receives, validates, and prepares applicant data before it enters the AI evaluation pipeline.
+
+Every application follows the same standardized intake process regardless of the form provider or deployment environment. Organizations can customize intake behavior through configuration without modifying the underlying workflows.
+
+---
+
+# Overview
+
+The intake configuration controls:
+
+- Application providers
+- Required applicant information
+- Supported media uploads
+- Validation rules
+- Consent requirements
+- Minor applicant handling
+- Duplicate detection
+- Reapplication policies
+- Localization settings
+
+The output of the intake stage is a normalized applicant record that can be processed consistently by downstream AI and workflow components.
+
+---
+
+# Intake Providers
+
+Talent Prism is provider-agnostic and can receive applications from multiple sources.
+
+Supported examples include:
+
+- Tally Forms
+- Typeform
+- Google Forms
+- Custom Web Portals
+- Internal Recruitment Systems
+- REST APIs
+
+Example
+
+```yaml
+provider: tally
+```
+
+Changing the intake provider should not require modifications to the evaluation workflows. Providers should map incoming data to the standardized Talent Prism schema.
+
+---
+
+# Applicant Fields
+
+Organizations can define which applicant information is collected during intake.
+
+Typical fields include:
+
+| Field | Required | Description |
+|---------|----------|-------------|
+| Full Name | ✓ | Applicant's legal name |
+| Email Address | ✓ | Primary contact information |
+| Phone Number | Optional | Contact number |
+| Date of Birth | ✓ | Age verification |
+| Gender | ✓ | Applicant profile |
+| Country | ✓ | Country of residence |
+| Nationality | Optional | Citizenship |
+| Languages | Optional | Spoken languages |
+| Height | Optional | Physical measurement |
+| Instagram | Optional | Social profile |
+| Experience | Optional | Previous modeling experience |
+
+Example
+
+```yaml
+required_fields:
+
+  - full_name
+  - email
+  - date_of_birth
+  - gender
+  - country
+```
+
+---
+
+# Media Requirements
+
+Organizations can define which media files applicants must upload.
+
+Typical examples include:
+
+- Headshot
+- Full Body
+- Left Profile
+- Right Profile
+- Three Quarter
+- Polaroids
+- Introduction Video
+
+Example
+
+```yaml
+photos:
+
+  headshot:
+    required: true
+
+  full_body:
+    required: true
+
+  profile:
+    required: false
+
+videos:
+
+  introduction:
+    required: false
+```
+
+Media requirements may differ depending on agency preferences.
+
+---
+
+# File Validation
+
+Uploaded media should satisfy basic validation requirements before entering the processing pipeline.
+
+Example
+
+```yaml
+validation:
+
+  allowed_formats:
+
+    - jpg
+    - jpeg
+    - png
+
+  max_file_size_mb: 20
+
+  minimum_resolution:
+
+    width: 1200
+
+    height: 1600
+```
+
+Files that fail validation should be rejected before storage or AI evaluation.
+
+---
+
+# Consent Requirements
+
+Organizations may require applicants to provide legal consent before processing begins.
+
+Typical consent categories include:
+
+- Privacy Policy
+- Terms of Service
+- AI Processing
+- Media Processing
+- Marketing Communications
+
+Example
+
+```yaml
+consent:
+
+  privacy_policy: true
+
+  terms_of_service: true
+
+  ai_processing: true
+
+  marketing: false
+```
+
+Applications missing mandatory consent should not proceed through the workflow.
+
+---
+
+# Minor Applicants
+
+Organizations may define additional requirements for applicants below a specified age.
+
+Example
+
+```yaml
+minor_policy:
+
+  enabled: true
+
+  age_limit: 18
+
+  guardian_name: required
+
+  guardian_email: required
+
+  guardian_phone: required
+
+  guardian_consent: required
+```
+
+If guardian information is incomplete, processing should stop until the required information is provided.
+
+---
+
+# Validation Rules
+
+Applicant information should be validated before storage.
+
+Typical validation includes:
+
+- Required fields
+- Email format
+- Phone format
+- Date validation
+- Country validation
+- Age verification
+- Media availability
+- Consent verification
+
+Example
+
+```yaml
+validation:
+
+  email: true
+
+  phone: true
+
+  date_of_birth: true
+
+  consent: true
+```
+
+Organizations may extend validation according to their business requirements.
+
+---
+
+# Duplicate Detection
+
+Duplicate applications may be detected before processing.
+
+Matching can be performed using one or more applicant identifiers.
+
+Example
+
+```yaml
+duplicate_detection:
+
+  enabled: true
+
+  match_on:
+
+    - email
+
+    - phone
+
+    - instagram
+```
+
+Organizations may choose to:
+
+- Reject duplicate applications
+- Update existing records
+- Flag duplicates for recruiter review
+
+---
+
+# Reapplication Policy
+
+Organizations may define how frequently applicants can submit new applications.
+
+Example
+
+```yaml
+reapplication:
+
+  enabled: true
+
+  cooldown_days: 180
+```
+
+A reapplication policy helps reduce duplicate submissions while allowing applicants to reapply after a reasonable period.
+
+---
+
+# Initial Application Status
+
+Every successful intake begins with an initial workflow state.
+
+Example
+
+```yaml
+status:
+
+  application_stage: processing
+
+  processing_status: queued
+```
+
+The workflow engine updates these values as the application progresses through the evaluation pipeline.
+
+---
+
+# Localization
+
+Organizations may customize intake behavior based on region.
+
+Supported examples include:
+
+- Languages
+- Measurement units
+- Date formats
+- Country-specific requirements
+
+Example
+
+```yaml
+localization:
+
+  language: fr
+
+  units: metric
+
+  date_format: DD/MM/YYYY
+```
+
+Localization ensures applicants receive forms and communications appropriate for their region.
+
+---
+
+# Notifications
+
+Organizations may configure notifications triggered after successful intake.
+
+Examples include:
+
+- Applicant confirmation emails
+- Recruiter notifications
+- Internal workflow triggers
+- CRM synchronization
+
+Example
+
+```yaml
+notifications:
+
+  applicant_confirmation: true
+
+  recruiter_notification: true
+
+  webhook_trigger: true
+```
+
+---
+
+# Best Practices
+
+- Keep required fields to the minimum necessary.
+- Validate applicant information before storage.
+- Require consent before AI processing.
+- Reject invalid or incomplete submissions early.
+- Keep provider-specific mappings outside workflow logic.
+- Prefer configuration over hardcoded validation rules.
+- Normalize applicant data before downstream processing.
+
+---
+
+# Related Documentation
+
+- Organization Settings
+- AI Configuration
+- Storage Configuration
+- Workflow Configuration
+- Security Configuration
+- Maintenance Configuration

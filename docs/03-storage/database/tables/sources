@@ -1,0 +1,113 @@
+## Purpose
+
+Stores the origin of incoming applications. A source can represent an agency, referral partner, website form, email inbox, social media campaign, API integration, recruiter, or any other channel that submits applicants into the system.
+
+Instead of repeating source information for every applicant, the system stores it once and links each application through a foreign key. This enables centralized source management and reporting.
+
+---
+
+## Table Relationships
+
+| Relationship | Description |
+| --- | --- |
+| `id` → `intake.source_id` | One source can be associated with many applicant records. |
+
+---
+
+# Columns
+
+## Identity
+
+| Column | Meaning |
+| --- | --- |
+| `id` | Unique source identifier (UUID). |
+
+---
+
+## Source Information
+
+| Column | Meaning |
+| --- | --- |
+| `agency_name` | Name of the organization, agency, partner, or source channel. |
+| `platform_type` | Method through which applications are received (e.g., Website Form, Email, API, Referral, Manual Import). |
+| `region` | Geographic region or market associated with the source. |
+
+---
+
+## Contact Information
+
+| Column | Meaning |
+| --- | --- |
+| `contact_name` | Primary contact person for the source. |
+| `contact_email` | Contact email address. |
+| `contact_phone` | Contact phone number. |
+
+---
+
+## Status
+
+| Column | Meaning |
+| --- | --- |
+| `active` | Indicates whether this source is currently active and accepting applications. |
+
+---
+
+## Audit
+
+| Column | Meaning |
+| --- | --- |
+| `created_at` | Timestamp when the source record was created. |
+
+---
+
+# Constraints
+
+## Primary Key
+
+```
+id
+```
+
+---
+
+# Typical Workflow
+
+```
+Application Source
+        │
+        ▼
+Create Source Record
+        │
+        ▼
+Applicants Reference source_id
+        │
+        ▼
+Reporting & Analytics
+```
+
+---
+
+# Common Use Cases
+
+- Partner agencies
+- Referral partners
+- Website application forms
+- Email inboxes
+- Open casting calls
+- Social media campaigns
+- Recruiters or scouts
+- API integrations
+- Third-party application platforms
+
+---
+
+# Why This Table Exists
+
+Rather than storing source information repeatedly for every applicant, each application references a single source record. This improves data consistency, reduces duplication, and makes it possible to analyze recruitment performance across different channels.
+
+Example questions this table helps answer:
+
+- Which recruitment source generates the most applications?
+- Which partners produce the highest acceptance rate?
+- Which channels generate the highest-quality candidates?
+- Which regions contribute the most successful applicants

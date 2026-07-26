@@ -1,0 +1,10 @@
+name = "r2-signer"
+main = "index.js"
+compatibility_date = "2026-07-24"
+
+[observability]
+enabled = true
+
+[vars]
+R2_ACCOUNT_ID = "your-cloudflare-account-id"
+R2_BUCKET_NAME = "your-r2-bucket-name"

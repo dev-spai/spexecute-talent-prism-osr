@@ -1,0 +1,188 @@
+## Purpose
+
+Stores internal users who access and operate the Talent Prism platform. Each record defines a user's role, permissions, assigned responsibilities, and access level within the system.
+
+This table is used for authorization, workflow assignment, auditing, and feature-level access control. It does **not** manage authentication credentials or passwords.
+
+---
+
+# Table Relationships
+
+Although this table does not currently enforce foreign keys, several tables reference users for audit purposes.
+
+Examples include:
+
+- `intake.assigned_to`
+- `intake.stage_updated_by`
+- `intake.model_signed_by`
+- `intake.flagged_by`
+- `intake.escalated_by`
+- `stage_history.changed_by`
+- `intake_notes.author_id`
+- `export_log.exported_by`
+
+---
+
+# Columns
+
+## Identity
+
+| Column | Meaning |
+| --- | --- |
+| `id` | Unique user identifier (UUID). |
+| `full_name` | Full name of the user. |
+| `email` | Unique email address used to identify the user. |
+
+---
+
+## Role & Permissions
+
+| Column | Meaning |
+| --- | --- |
+| `role` | Primary organizational role within the platform. |
+| `permission_level` | Internal permission grouping or access level. |
+| `active` | Indicates whether the user account is active. |
+
+Allowed values for `role`:
+
+| Value | Meaning |
+| --- | --- |
+| `MD` | Managing Director with full operational oversight. |
+| `Head Scout` | Senior reviewer responsible for scouting operations. |
+| `Scout` | Reviews and evaluates applicants. |
+| `VA` | Virtual Assistant or operational support user. |
+
+---
+
+## Workflow Permissions
+
+| Column | Meaning |
+| --- | --- |
+| `can_greenlight` | Can approve applicants for progression or signing. |
+| `can_export_csv` | Can export applicant data. |
+| `can_view_all` | Can access all applicant records. |
+| `can_view_vip_tab` | Can access VIP candidates. |
+| `can_view_fraud_tab` | Can access fraud analysis views. |
+| `can_view_archive_tabs` | Can access archived records. |
+| `can_view_young_talent` | Can access youth/minor applicant workflows. |
+| `can_view_escalated` | Can access escalated applications. |
+| `can_escalate_to_hot` | Can escalate applicants into high-priority review queues. |
+
+---
+
+## Assignment
+
+| Column | Meaning |
+| --- | --- |
+| `assigned_batch` | Batch or queue currently assigned to the user. |
+| `assigned_territories` | Geographic regions or territories managed by the user. |
+
+---
+
+## Escalation
+
+| Column | Meaning |
+| --- | --- |
+| `escalation_tier` | Highest escalation level the user is authorized to handle. |
+
+Allowed values:
+
+| Value | Meaning |
+| --- | --- |
+| `scout` | Entry-level reviewer. |
+| `senior` | Senior reviewer. |
+| `head` | Department head. |
+| `manager` | Operations manager. |
+| `admin` | System administrator. |
+
+---
+
+## Audit
+
+| Column | Meaning |
+| --- | --- |
+| `created_at` | Timestamp when the user record was created. |
+| `notes` | Internal administrative notes about the user. |
+
+---
+
+# Constraints
+
+## Primary Key
+
+```
+id
+```
+
+---
+
+## Unique Constraint
+
+```
+email
+```
+
+Every user must have a unique email address.
+
+---
+
+## Check Constraints
+
+### `role`
+
+Allowed values:
+
+- MD
+- Head Scout
+- Scout
+- VA
+
+### `escalation_tier`
+
+Allowed values:
+
+- scout
+- senior
+- head
+- manager
+- admin
+
+---
+
+# Typical Workflow
+
+```
+Administrator Creates User
+          │
+          ▼
+Assign Role
+          │
+          ▼
+Configure Permissions
+          │
+          ▼
+Assign Territory / Batch
+          │
+          ▼
+User Reviews Applicants
+          │
+          ▼
+Actions Recorded Across System
+```
+
+---
+
+# Common Use Cases
+
+- Control access to application features.
+- Assign applicants and processing queues.
+- Manage reviewer responsibilities.
+- Record which user performed workflow actions.
+- Restrict exports and sensitive data access.
+- Support operational auditing and accountability.
+
+---
+
+# Why This Table Exists
+
+Rather than embedding user names throughout the application, the system centralizes user information, roles, and permissions in a dedicated table. This enables consistent access control, easier administration, and reliable auditing of user actions across the platform.

@@ -1,0 +1,142 @@
+## Purpose
+
+Stores a complete audit trail of workflow events for every applicant. Each record represents a significant action performed during the application's lifecycle, including stage transitions, assignments, escalations, flags, notes, and bulk operations.
+
+Unlike the `intake` table, which only stores the current state, `stage_history` preserves the chronological history of every important workflow event, enabling traceability, reporting, and operational auditing.
+
+---
+
+# Table Relationships
+
+| Relationship | Description |
+| --- | --- |
+| `intake_id` → `intake.intake_id` | Each history record belongs to a single applicant. |
+| One applicant | Can have multiple workflow history records. |
+
+---
+
+# Columns
+
+## Identity
+
+| Column | Meaning |
+| --- | --- |
+| `id` | Unique workflow event identifier (UUID). |
+| `intake_id` | Applicant associated with the workflow event. |
+
+---
+
+## Stage Transition
+
+| Column | Meaning |
+| --- | --- |
+| `from_stage` | Workflow stage before the action occurred. |
+| `to_stage` | Workflow stage after the action was completed. |
+
+---
+
+## Action Details
+
+| Column | Meaning |
+| --- | --- |
+| `action_type` | Type of workflow event being recorded. |
+| `notes` | Additional context or explanation for the action. |
+
+Allowed values for `action_type`:
+
+| Value | Meaning |
+| --- | --- |
+| `stage_change` | Applicant moved from one workflow stage to another. |
+| `assignment` | Applicant assigned or reassigned to a reviewer or scout. |
+| `flag` | Applicant manually flagged for attention. |
+| `escalation` | Applicant escalated for further review. |
+| `note_added` | Manual note or comment added to the workflow history. |
+| `bulk_action` | Action performed as part of a bulk operation affecting multiple applicants. |
+
+---
+
+## Audit
+
+| Column | Meaning |
+| --- | --- |
+| `changed_by` | User or system responsible for the workflow event. |
+| `changed_at` | Timestamp when the event occurred. |
+
+---
+
+# Constraints
+
+## Primary Key
+
+```
+id
+```
+
+---
+
+## Foreign Key
+
+```
+intake_id
+    ↓
+intake.intake_id
+```
+
+Each workflow event must reference a valid applicant.
+
+---
+
+## Check Constraint
+
+`action_type` is restricted to:
+
+- stage_change
+- assignment
+- flag
+- escalation
+- note_added
+- bulk_action
+
+---
+
+# Typical Workflow
+
+```
+Application Created
+        │
+        ▼
+Stage Changed
+        │
+        ▼
+Assigned to Reviewer
+        │
+        ▼
+Escalated
+        │
+        ▼
+Manual Review
+        │
+        ▼
+Decision Recorded
+```
+
+Each step creates a new record in `stage_history`, producing a complete timeline of the application's progression.
+
+---
+
+# Common Use Cases
+
+- Audit every stage transition.
+- Track reviewer assignments and ownership changes.
+- Record manual flags and escalations.
+- Maintain a chronological history of workflow events.
+- Support operational reporting and compliance.
+- Reconstruct the complete lifecycle of an applicant.
+
+---
+
+# Why This Table Exists
+
+The `intake` table stores only the **current** state of an application. `stage_history` stores **how it reached that state**.
+
+Separating historical events from the current record keeps the primary table concise while providing a permanent audit trail for reporting, debugging, and accountability.

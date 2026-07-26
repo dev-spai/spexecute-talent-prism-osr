@@ -1,0 +1,561 @@
+## Why you need views?
+
+The Talent Prism database is designed using a **normalized relational database model**. Instead of storing all information in a single table, related information is organized into separate tables, each with a clear responsibility.
+
+For example:
+
+- The `intake` table stores applicant information.
+- The `media_forensics` table stores AI image analysis and photo quality assessments.
+- The `intake_notes` table stores reviewer notes.
+- The `stage_history` table stores workflow history.
+- The `roster` table stores signed talent.
+- The `users` table stores application users and permissions.
+
+This approach makes the database easier to maintain, prevents duplicate data, and keeps each table focused on a single responsibility.
+
+However, most applications do not work directly with normalized tables.
+
+A recruiter opening an applicant dashboard does not want to manually join five different tables. Likewise, an API should not require developers to write complex SQL every time they need applicant information.
+
+This is where **database views** become useful.
+
+A database view is a **saved SQL query** that behaves like a read-only table. Views simplify application development by combining information from one or more tables into a dataset that is easier to consume.
+
+Views do **not** duplicate data. Instead, they present the latest information from the underlying tables whenever they are queried.
+
+Since every organization has different dashboards, reports, workflows, and API requirements, this repository intentionally **does not include production views**. Instead, the following sections provide recommended views that many applicant management systems and AI-powered review platforms commonly implement.
+
+Each recommendation includes:
+
+- The purpose of the view
+- The tables it would typically use
+- The information it should expose
+- Common use cases
+- A simplified SQL example demonstrating the concept
+
+> **Important**
+> 
+> 
+> The SQL examples below are intentionally simplified to demonstrate common design patterns. They are **not production-ready implementations**. You should customize them to match your application's workflows, business rules, and reporting requirements.
+> 
+
+---
+
+# 1. Candidate Overview
+
+## Suggested View Name
+
+`v_candidate_overview`
+
+## Purpose
+
+This is typically the primary view used throughout the application.
+
+Rather than exposing every column from the `intake` table, this view returns only the information that recruiters, dashboards, APIs, and reporting tools need most frequently.
+
+It provides a lightweight summary of every applicant.
+
+---
+
+## Recommended Source Tables
+
+- `intake`
+
+---
+
+## Suggested Information
+
+### Applicant Information
+
+- Applicant ID
+- Full Name
+- Email
+- Phone Number
+- Instagram Profile
+- Age
+- City
+- Country
+
+### AI Evaluation
+
+- Structural Score
+- Aesthetic Score
+- Overall Agency Score
+- Booking Potential
+- Primary Market
+- Secondary Market
+- Final Verdict
+
+### Workflow
+
+- Current Status
+- Current Stage
+- Assigned Reviewer
+- Application Date
+
+---
+
+## Common Use Cases
+
+- Recruiter dashboard
+- Applicant search
+- Internal CRM
+- Reporting
+- CSV exports
+- API responses
+
+---
+
+## Example SQL
+
+```sql
+CREATE VIEW v_candidate_overview AS
+SELECT
+    intake_id,
+    full_name,
+    email,
+    phone,
+    instagram_url,
+    application_stage,
+    status,
+    structural_score,
+    aesthetic_score,
+    final_agency_score,
+    final_verdict,
+    application_date
+FROM intake;
+```
+
+---
+
+# 2. Candidate Media
+
+## Suggested View Name
+
+`v_candidate_media`
+
+## Purpose
+
+Applicants often submit multiple photographs that are processed by AI.
+
+Applicant information is stored in the `intake` table, while image analysis, quality assessments, fraud detection, and storage metadata are stored in the `media_forensics` table.
+
+This view combines both datasets into a single record for each image.
+
+---
+
+## Recommended Source Tables
+
+- `intake`
+- `media_forensics`
+
+---
+
+## Suggested Information
+
+### Applicant
+
+- Applicant ID
+- Full Name
+
+### Media
+
+- Photo Type
+- Upload Date
+- Storage URL
+- Processing Status
+
+### AI Analysis
+
+- Photo Quality
+- Sharpness
+- Lighting
+- Face Visibility
+- Composition
+- AI Recommendation
+
+### Fraud Detection
+
+- Duplicate Detection
+- Edited Image Detection
+- AI Generated Image Detection
+- Overall Fraud Risk
+
+---
+
+## Common Use Cases
+
+- Photo review
+- Image moderation
+- AI validation
+- Fraud investigation
+- Media management
+
+---
+
+## Example SQL
+
+```sql
+CREATE VIEW v_candidate_media AS
+SELECT
+    i.intake_id,
+    i.full_name,
+    m.photo_type,
+    m.storage_url,
+    m.processing_status,
+    m.photo_quality_score,
+    m.fraud_risk
+FROM intake i
+JOIN media_forensics m
+ON i.intake_id = m.intake_id;
+```
+
+---
+
+# 3. Candidate Timeline
+
+## Suggested View Name
+
+`v_candidate_timeline`
+
+## Purpose
+
+Throughout the review process, applicants move through multiple workflow stages while reviewers leave notes explaining important decisions.
+
+These events are stored in separate tables.
+
+This view combines workflow history and reviewer notes into a single chronological timeline.
+
+---
+
+## Recommended Source Tables
+
+- `intake`
+- `stage_history`
+- `intake_notes`
+
+---
+
+## Suggested Information
+
+### Timeline Events
+
+- Application Submitted
+- Stage Changes
+- Reviewer Assignment
+- Reviewer Notes
+- Escalations
+- Acceptance
+- Rejection
+
+Each event should include:
+
+- Timestamp
+- User
+- Event Type
+- Description
+
+---
+
+## Common Use Cases
+
+- Applicant history
+- Audit trails
+- Reviewer handoffs
+- Workflow debugging
+- Management review
+
+---
+
+## Example SQL
+
+```sql
+CREATE VIEW v_candidate_timeline AS
+
+SELECT
+    intake_id,
+    stage_name AS event,
+    changed_at AS event_time,
+    changed_by AS user_id,
+    'Stage Change' AS event_type
+FROM stage_history
+
+UNION ALL
+
+SELECT
+    intake_id,
+    note_type,
+    created_at,
+    created_by,
+    'Reviewer Note'
+FROM intake_notes;
+```
+
+---
+
+# 4. Processing Queue
+
+## Suggested View Name
+
+`v_processing_queue`
+
+## Purpose
+
+Operations teams usually only need to see applicants that still require action.
+
+Completed applications generally do not belong on operational dashboards.
+
+This view filters the database to show only applicants who are still being processed.
+
+---
+
+## Recommended Source Tables
+
+- `intake`
+
+---
+
+## Suggested Information
+
+- Applicant Name
+- Current Stage
+- Current Status
+- Assigned Reviewer
+- Priority
+- Retry Count
+- Follow-up Date
+
+---
+
+## Common Use Cases
+
+- Daily work queue
+- Operations dashboard
+- AI processing pipeline
+- Review management
+
+---
+
+## Example SQL
+
+```sql
+CREATE VIEW v_processing_queue AS
+
+SELECT
+    intake_id,
+    full_name,
+    application_stage,
+    status,
+    assigned_reviewer
+FROM intake
+WHERE status NOT IN ('Accepted', 'Rejected');
+```
+
+---
+
+# 5. AI Evaluation
+
+## Suggested View Name
+
+`v_ai_scores`
+
+## Purpose
+
+AI systems often generate many different evaluation metrics.
+
+Rather than searching through a large applicant table, this view groups all AI outputs into a dedicated dataset.
+
+---
+
+## Recommended Source Tables
+
+- `intake`
+
+---
+
+## Suggested Information
+
+### Structural Analysis
+
+- Structural Score
+- Facial Symmetry
+- Proportions
+
+### Aesthetic Analysis
+
+- Aesthetic Score
+- Editorial Potential
+- Commercial Appeal
+
+### Recommendations
+
+- Primary Market
+- Secondary Market
+- Final Agency Score
+- Confidence
+- Final Verdict
+
+---
+
+## Common Use Cases
+
+- AI analytics
+- Model validation
+- Performance monitoring
+- Internal QA
+- Reporting
+
+---
+
+## Example SQL
+
+```sql
+CREATE VIEW v_ai_scores AS
+
+SELECT
+    intake_id,
+    structural_score,
+    aesthetic_score,
+    final_agency_score,
+    primary_market,
+    secondary_market,
+    ranking_confidence,
+    final_verdict
+FROM intake;
+```
+
+---
+
+# 6. Source Performance
+
+## Suggested View Name
+
+`v_source_performance`
+
+## Purpose
+
+Many organizations receive applicants from multiple recruitment channels.
+
+Management often wants to understand which sources produce the strongest candidates.
+
+This view aggregates applicant statistics by recruitment source.
+
+---
+
+## Recommended Source Tables
+
+- `sources`
+- `intake`
+
+---
+
+## Suggested Information
+
+- Source Name
+- Source Type
+- Total Applicants
+- Accepted Applicants
+- Rejected Applicants
+- Average AI Score
+- Acceptance Rate
+
+---
+
+## Common Use Cases
+
+- Recruitment analytics
+- Marketing attribution
+- Partner evaluation
+- Executive reporting
+
+---
+
+## Example SQL
+
+```sql
+CREATE VIEW v_source_performance AS
+
+SELECT
+    s.source_name,
+    COUNT(*) AS total_applicants,
+    AVG(i.final_agency_score) AS average_score
+FROM sources s
+JOIN intake i
+ON s.source_id = i.source_id
+GROUP BY s.source_name;
+```
+
+---
+
+# 7. Reviewer Workload
+
+## Suggested View Name
+
+`v_reviewer_workload`
+
+## Purpose
+
+As applicant volume grows, managers need visibility into reviewer assignments and workload distribution.
+
+This view summarizes review activity for each reviewer.
+
+---
+
+## Recommended Source Tables
+
+- `users`
+- `intake`
+
+---
+
+## Suggested Information
+
+- Reviewer Name
+- Total Assigned Applicants
+- Pending Reviews
+- Completed Reviews
+- Escalated Reviews
+- Current Workload
+
+---
+
+## Common Use Cases
+
+- Team management
+- Capacity planning
+- Performance reporting
+- Workload balancing
+
+---
+
+## Example SQL
+
+```sql
+CREATE VIEW v_reviewer_workload AS
+
+SELECT
+    assigned_reviewer,
+    COUNT(*) AS assigned_candidates
+FROM intake
+GROUP BY assigned_reviewer;
+```
+
+---
+
+# Why These Views Are Recommendations
+
+The database schema included in this repository represents the **core operational data model** of the Talent Prism platform.
+
+Views, however, are part of the **application layer**. They are shaped by the needs of dashboards, APIs, reporting systems, and business workflows. As a result, there is no single "correct" set of views that fits every implementation.
+
+The examples in this document are intended to demonstrate common architectural patterns used in production systems. They provide a starting point that developers can adapt, extend, or replace based on the specific requirements of their own applications.
+
+In general, a good database view should:
+
+- Present only the information required for a specific use case.
+- Hide unnecessary implementation details from the application.
+- Reduce the need for repetitive SQL joins.
+- Simplify API development and reporting.
+- Improve readability and maintainability without duplicating data.
+
+As your application evolves, you may create additional views for analytics, exports, dashboards, machine learning pipelines, or any other workflow that benefits from a simplified, read-only representation of your operational data.

@@ -1,0 +1,200 @@
+## Purpose
+
+Stores metadata, AI analysis, quality assessment, fraud detection, and processing information for every image submitted by an applicant.
+
+Each uploaded image (headshot, full body, profile, etc.) has its own record, allowing independent analysis, quality control, and fraud detection without modifying the original applicant record.
+
+---
+
+## Table Relationships
+
+| Relationship | Description |
+| --- | --- |
+| `intake_id` → `intake.intake_id` | Image belongs to an applicant. |
+| `batch_id` | Groups multiple images processed in the same AI pipeline run. |
+| One applicant | Can have many media records. |
+
+---
+
+# Columns
+
+## Identity
+
+| Column | Meaning |
+| --- | --- |
+| `id` | Unique media record identifier (UUID). |
+| `intake_id` | Applicant this image belongs to. |
+| `batch_id` | Processing batch identifier shared across related images. |
+
+---
+
+## Image Storage
+
+| Column | Meaning |
+| --- | --- |
+| `storage_url` | Original storage location of the uploaded image. |
+| `r2_object_key` | Object key used within Cloudflare R2 storage. |
+| `retool_signed_url` | Temporary signed URL generated for Retool or internal dashboards. |
+| `retool_url_expires_at` | Expiration timestamp for the signed URL. |
+| `is_thumbnail` | Indicates whether this record represents a thumbnail image. |
+
+---
+
+## Image Classification
+
+| Column | Meaning |
+| --- | --- |
+| `photo_type` | Type of image submitted for analysis. |
+
+Allowed values:
+
+| Value | Meaning |
+| --- | --- |
+| `headshot` | Front-facing portrait. |
+| `full_body` | Full-body image. |
+| `profile` | Side profile photograph. |
+| `three_quarter` | Three-quarter pose. |
+| `polaroid` | Natural digitals/polaroids. |
+
+---
+
+## Image Metadata
+
+| Column | Meaning |
+| --- | --- |
+| `image_resolution` | Resolution of the uploaded image (e.g. 3024×4032). |
+| `image_file_size_kb` | File size in kilobytes. |
+| `head_count_detected` | Number of faces detected in the image. |
+
+---
+
+## AI Photo Quality Assessment
+
+| Column | Meaning |
+| --- | --- |
+| `lighting_quality` | AI assessment of lighting conditions. |
+| `gemini_score` | Overall image quality score assigned by Gemini. |
+| `gemini_notes` | AI-generated explanation of the quality assessment. |
+| `photo_instruction_pass` | Whether the image meets submission guidelines. |
+| `photo_instruction_fail_reason` | Explanation of why the image failed quality requirements. |
+| `photo_compliance_checked` | Indicates whether compliance validation has been completed. |
+
+---
+
+## Fraud Detection
+
+| Column | Meaning |
+| --- | --- |
+| `fraud_risk` | Overall fraud assessment. |
+| `fraud_flags` | List of detected fraud indicators. |
+| `ela_heatmap_url` | Link to the Error Level Analysis (ELA) visualization used for image tampering detection. |
+| `facial_landmark_map_url` | Visualization of detected facial landmarks used during structural analysis. |
+
+Allowed values for `fraud_risk`:
+
+| Value | Meaning |
+| --- | --- |
+| `Clear` | No suspicious indicators detected. |
+| `Suspicious` | Potential manipulation or anomalies detected. |
+| `Manipulated` | Strong evidence of editing or synthetic content. |
+
+---
+
+## AI Processing
+
+| Column | Meaning |
+| --- | --- |
+| `processing_status` | Current processing state within the AI pipeline. |
+| `retry_count` | Number of processing retries performed. |
+| `error_notes` | Processing or validation errors encountered. |
+
+---
+
+## Audit
+
+| Column | Meaning |
+| --- | --- |
+| `created_at` | Timestamp when the media record was created. |
+
+---
+
+# Constraints
+
+## Primary Key
+
+```
+id
+```
+
+---
+
+## Foreign Key
+
+```
+intake_id
+    ↓
+intake.intake_id
+```
+
+Each media record belongs to a valid applicant.
+
+---
+
+## Check Constraints
+
+### `photo_type`
+
+Allowed values:
+
+- headshot
+- full_body
+- profile
+- three_quarter
+- polaroid
+
+---
+
+### `fraud_risk`
+
+Allowed values:
+
+- Clear
+- Suspicious
+- Manipulated
+
+---
+
+# Typical Workflow
+
+```
+Applicant uploads photos
+        │
+        ▼
+Media records created
+        │
+        ▼
+Metadata extracted
+        │
+        ▼
+AI quality assessment
+        │
+        ▼
+Fraud detection
+        │
+        ▼
+Compliance validation
+        │
+        ▼
+Results available to reviewers
+```
+
+---
+
+# Common Use Cases
+
+- Validate uploaded images before AI scoring.
+- Detect low-quality or non-compliant submissions.
+- Identify potentially manipulated or AI-generated images.
+- Generate signed URLs for secure internal review.
+- Store image metadata separately from applicant records.
+- Support batch processing of multiple images per applican

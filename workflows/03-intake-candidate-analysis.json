@@ -1,0 +1,875 @@
+{
+  "name": "03-intake-candidate-analysis",
+  "nodes": [
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intake_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "37815df9-a4e8-46e6-8ad8-03ecafd67840"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Single Record"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "3fbae476-5245-45aa-a5ee-a21809d0b9f9",
+                    "leftValue": "={{ $json.intake_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Batch (Cron)"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        -96
+      ],
+      "id": "919ab18e-541f-43c9-b20f-12c64e83f484",
+      "name": "Switch: Route by Trigger Type"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "intake",
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "intake_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.intake_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        448,
+        -192
+      ],
+      "id": "1b91d055-e309-47de-8f76-ba747d19547b",
+      "name": "Supabase: Get Single Intake Record",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "intake",
+        "limit": 15,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "batch_processing_status",
+              "condition": "eq",
+              "keyValue": "structural"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        448,
+        0
+      ],
+      "id": "bb59a3c0-7bdf-4221-aa0a-386d353edb9a",
+      "name": "Supabase: Get Queued Records",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "media_forensics",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "intake_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Merge: Single + Batch').item.json.intake_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        -96
+      ],
+      "id": "a59717ed-f5bc-4657-9047-8b654732dd17",
+      "name": "Supabase: Get Photo URLs",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        672,
+        -96
+      ],
+      "id": "db13f259-9109-446c-ad65-da937c83365a",
+      "name": "Merge: Single + Batch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const photos = $input.all();\nif (!photos.length) {\n  throw new Error('No media_forensics rows found for this intake_id');\n}\n\nconst intake_id = photos[0].json.intake_id;\nconst batch_id = photos[0].json.batch_id;\n\n// Pull gender from the Supabase Get Single node\nconst gender = $('Merge: Single + Batch').first().json.gender ?? null;\n\nconst now = new Date();\nconst photoUrls = photos\n  .filter(p => {\n    if (!p.json.retool_signed_url) return false;\n    if (!p.json.retool_url_expires_at) return false;\n    return new Date(p.json.retool_url_expires_at) > now;\n  })\n  .map(p => ({\n    id: p.json.id,\n    url: p.json.retool_signed_url,\n    photo_type: p.json.photo_type,\n    r2_object_key: p.json.r2_object_key\n  }));\n\nif (photoUrls.length === 0) {\n  throw new Error('All signed URLs are null or expired for intake_id: ' + intake_id + '. Run URL refresh first.');\n}\n\nreturn [{\n  json: {\n    intake_id,\n    batch_id,\n    gender,\n    photo_urls: photoUrls,\n    images_in_batch: photoUrls.length\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        -96
+      ],
+      "id": "68081911-1757-48ba-9e75-cd4cde7f9d4b",
+      "name": "Code: Build Gemini Photo List"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appYcE1r1ZddkVbK3",
+          "mode": "list",
+          "cachedResultName": "SPeXecute TS CRM",
+          "cachedResultUrl": "https://airtable.com/appYcE1r1ZddkVbK3"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblwHQEfJ1QqKrNFi",
+          "mode": "list",
+          "cachedResultName": "CLIENT CONFIG TP",
+          "cachedResultUrl": "https://airtable.com/appYcE1r1ZddkVbK3/tblwHQEfJ1QqKrNFi"
+        },
+        "filterByFormula": "{Agency Slug} = 'noir-collective-france'",
+        "returnAll": false,
+        "limit": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        896,
+        -96
+      ],
+      "id": "83c53077-701a-459b-ba46-70be9fd06340",
+      "name": "Read Agency Slug",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "CUAL7Ly1XFjdriNl",
+          "name": "Airtable PAT API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n  \"intake_id\": \"c846603e-6ab4-404e-a3c3-8a1505d181cb\"\n}"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f82da4c2-8eac-4793-851f-139529417346",
+      "name": "Trigger: Called by Intake - Photo Check"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "intake",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "intake_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.intake_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "batch_processing_status",
+              "fieldValue": "complete"
+            },
+            {
+              "fieldId": "application_stage",
+              "fieldValue": "scored"
+            },
+            {
+              "fieldId": "cheek_to_jaw_ratio",
+              "fieldValue": "={{ $json.cheek_to_jaw_ratio }}"
+            },
+            {
+              "fieldId": "interpupillary_index",
+              "fieldValue": "={{ $json.interpupillary_index }}"
+            },
+            {
+              "fieldId": "facial_thirds_balance",
+              "fieldValue": "={{ $json.facial_thirds_balance }}"
+            },
+            {
+              "fieldId": "symmetry_score",
+              "fieldValue": "={{ $json.symmetry_score }}"
+            },
+            {
+              "fieldId": "razor_jaw_angle",
+              "fieldValue": "={{ $json.razor_jaw_angle }}"
+            },
+            {
+              "fieldId": "jaw_definition",
+              "fieldValue": "={{ $json.jaw_definition }}"
+            },
+            {
+              "fieldId": "cheekbone_structure",
+              "fieldValue": "={{ $json.cheekbone_structure }}"
+            },
+            {
+              "fieldId": "supraorbital_ridge_score",
+              "fieldValue": "={{ $json.supraorbital_ridge_score }}"
+            },
+            {
+              "fieldId": "smile_corridor",
+              "fieldValue": "={{ $json.smile_corridor }}"
+            },
+            {
+              "fieldId": "intercanthal_distance",
+              "fieldValue": "={{ $json.intercanthal_distance }}"
+            },
+            {
+              "fieldId": "memorability_index",
+              "fieldValue": "={{ $json.memorability_index }}"
+            },
+            {
+              "fieldId": "leg_to_body_ratio",
+              "fieldValue": "={{ $json.leg_to_body_ratio }}"
+            },
+            {
+              "fieldId": "clavicle_prominence",
+              "fieldValue": "={{ $json.clavicle_prominence }}"
+            },
+            {
+              "fieldId": "overall_body_proportion",
+              "fieldValue": "={{ $json.overall_body_proportion }}"
+            },
+            {
+              "fieldId": "shoulder_line",
+              "fieldValue": "={{ $json.shoulder_line }}"
+            },
+            {
+              "fieldId": "jawline_squareness",
+              "fieldValue": "={{ $json.jawline_squareness }}"
+            },
+            {
+              "fieldId": "brow_ridge_strength",
+              "fieldValue": "={{ $json.brow_ridge_strength }}"
+            },
+            {
+              "fieldId": "neck_definition",
+              "fieldValue": "={{ $json.neck_definition }}"
+            },
+            {
+              "fieldId": "shoulder_to_waist_ratio",
+              "fieldValue": "={{ $json.shoulder_to_waist_ratio }}"
+            },
+            {
+              "fieldId": "height_to_torso_ratio",
+              "fieldValue": "={{ $json.height_to_torso_ratio }}"
+            },
+            {
+              "fieldId": "facial_gender_read",
+              "fieldValue": "={{ $json.facial_gender_read }}"
+            },
+            {
+              "fieldId": "androgyny_score",
+              "fieldValue": "={{ $json.androgyny_score }}"
+            },
+            {
+              "fieldId": "androgyny_casting_fit",
+              "fieldValue": "={{ $json.androgyny_casting_fit }}"
+            },
+            {
+              "fieldId": "score_reasoning",
+              "fieldValue": "={{ $json.score_reasoning }}"
+            },
+            {
+              "fieldId": "structural_score",
+              "fieldValue": "={{ $json.structural_score }}"
+            },
+            {
+              "fieldId": "aesthetic_score",
+              "fieldValue": "={{ $json.aesthetic_score }}"
+            },
+            {
+              "fieldId": "final_agency_score",
+              "fieldValue": "={{ $json.final_agency_score }}"
+            },
+            {
+              "fieldId": "primary_agency_fit_category",
+              "fieldValue": "={{ $json.primary_agency_fit_category }}"
+            },
+            {
+              "fieldId": "booking_potential",
+              "fieldValue": "={{ $json.booking_potential }}"
+            },
+            {
+              "fieldId": "ranking_confidence",
+              "fieldValue": "={{ $json.ranking_confidence }}"
+            },
+            {
+              "fieldId": "structural_confidence",
+              "fieldValue": "={{ $json.structural_confidence }}"
+            },
+            {
+              "fieldId": "final_verdict",
+              "fieldValue": "={{ $json.stage2_analysis.final_verdict }}"
+            },
+            {
+              "fieldId": "primary_market",
+              "fieldValue": "={{ $json.primary_market }}"
+            },
+            {
+              "fieldId": "secondary_market",
+              "fieldValue": "={{ $json.secondary_market }}"
+            },
+            {
+              "fieldId": "active_category_scores",
+              "fieldValue": "={{ $json.active_category_scores }}"
+            },
+            {
+              "fieldId": "visual_summary",
+              "fieldValue": "={{ $json.visual_summary }}"
+            },
+            {
+              "fieldId": "zygomatic_confidence",
+              "fieldValue": "={{ $json.zygomatic_confidence }}"
+            },
+            {
+              "fieldId": "zygomatic_ratio",
+              "fieldValue": "={{ $json.zygomatic_ratio }}"
+            },
+            {
+              "fieldId": "symmetry_variance",
+              "fieldValue": "={{ $json.symmetry_variance }}"
+            },
+            {
+              "fieldId": "versatility_flag",
+              "fieldValue": "={{ $json.versatility_flag }}"
+            },
+            {
+              "fieldId": "aesthetic_sub_type",
+              "fieldValue": "={{ $json.aesthetic_sub_type }}"
+            },
+            {
+              "fieldId": "structural_score",
+              "fieldValue": "={{ $json.structural_score }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3472,
+        -96
+      ],
+      "id": "79970850-a41a-47de-b1ea-e1d223cdd113",
+      "name": "Supabase: Update intake (structural results)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uUl9FSpY8qMhC0ss",
+          "name": "Supabase - Noir Test"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── INPUT DATA ──────────────────────────────────────────────────────\nconst photoData = $('Code: Build Gemini Photo List').first().json;\n\nconst gender = photoData.gender?.toLowerCase() ?? 'unknown';\nconst photos = photoData.photo_urls;\n\n// ── PHOTO BLOCK ─────────────────────────────────────────────────────\nconst photoBlock = photos\n  .map((p, i) => `Photo ${i + 1} (${p.photo_type}): ${p.url}`)\n  .join('\\n');\n\n// ── STRUCTURAL METRICS ──────────────────────────────────────────────\nconst universalMetrics = `symmetry_score (0-100)\nmemorability_index (0-100)\nandrogyny_score (0-100)\noverall_body_proportion (0-100)\ncheek_to_jaw_ratio (1.0-1.5)\ninterpupillary_index (0-100)\nfacial_thirds_balance: balanced|upper-heavy|lower-heavy\nintercanthal_distance: Wide-set|Standard|Close-set\nshoulder_line: Straight|Sloped|Asymmetric`;\n\nconst femaleMetrics = `jaw_definition (0-100)\ncheekbone_structure (0-100)\nsupraorbital_ridge_score (0-10)\nsmile_corridor: Wide|Moderate|Narrow\nclavicle_prominence: Strong|Moderate|Minimal\nleg_to_body_ratio (0.4-0.65)\nrazor_jaw_angle (100-160)`;\n\nconst maleMetrics = `jawline_squareness (0-100)\nbrow_ridge_strength (0-100)\nshoulder_to_waist_ratio (1.0-1.8)\nneck_definition (0-100)\nheight_to_torso_ratio (float)\nfacial_hair_versatility: High|Medium|Low`;\n\nconst nbMetrics = `facial_gender_read: Feminine|Androgynous|Masculine|Neutral\nandrogyny_casting_fit: Strong|Moderate|Low`;\n\nlet metricBlock = universalMetrics + '\\n';\n\nif (gender === 'female') {\n  metricBlock += femaleMetrics;\n} else if (gender === 'male') {\n  metricBlock += maleMetrics;\n} else {\n  metricBlock += nbMetrics;\n}\n\n// ── CATEGORY ENUMS ──────────────────────────────────────────────────\nconst categoryEnum = `\"editorial\" | \"runway\" | \"avant_garde\" | \"androgynous\" | \"classic\" | \"streetwear\"`;\n\n// ── GENDER SCHEMA ───────────────────────────────────────────────────\nlet genderSchema = '';\n\nif (gender === 'female') {\n  genderSchema = `\n    \"jaw_definition\": 0.0,\n    \"cheekbone_structure\": 0.0,\n    \"supraorbital_ridge_score\": 0.0,\n    \"smile_corridor\": \"Moderate\",\n    \"clavicle_prominence\": \"Moderate\",\n    \"leg_to_body_ratio\": 0.0,\n    \"razor_jaw_angle\": 0.0`;\n}\n\nelse if (gender === 'male') {\n  genderSchema = `\n    \"jawline_squareness\": 0.0,\n    \"brow_ridge_strength\": 0.0,\n    \"shoulder_to_waist_ratio\": 0.0,\n    \"neck_definition\": 0.0,\n    \"height_to_torso_ratio\": 0.0,\n    \"facial_hair_versatility\": \"Medium\"`;\n}\n\nelse {\n  genderSchema = `\n    \"facial_gender_read\": \"Androgynous\",\n    \"androgyny_casting_fit\": \"Strong\"`;\n}\n\n// ── PROMPT ──────────────────────────────────────────────────────────\nconst prompt = `\nYou are Talent Prism Stage 1: Visual Identity Extraction.\n\nYour job is to determine:\n- what this person structurally looks like\n- what aesthetic categories they naturally embody\n- how visually memorable/distinctive they are\n\nThis is NOT an agency-fit evaluation.\n\nDo NOT:\n- evaluate booking potential\n- evaluate brand fit\n- evaluate market fit\n- evaluate agency compatibility\n- estimate commercial success\n\nReturn ONLY valid JSON.\n\n-------------------------------------\nGLOBAL RULES\n-------------------------------------\n\n- Use all photos together\n- Cross-check across angles before assigning metrics\n- Evaluate structure, not styling or photography\n- Use full scoring range\n- Avoid optimism bias\n- Most applicants should NOT score above 75\n- Maximum 1-2 categories above 75\n- Include:\n  • at least one category below 50\n  • at least one category between 50-65\n- Commercial attractiveness alone does NOT imply editorial strength\n- If uncertain, reduce confidence\n- Only evaluate visible structural traits\n- Do not infer hidden features\n\n-------------------------------------\nAPPLICANT\n-------------------------------------\n\nGender: ${gender}\n\nInterpret structural traits relative to the applicant's gender identity.\nDo not assume aesthetic categories from gender identity alone.\n\n-------------------------------------\nSTRUCTURAL METRICS\n-------------------------------------\n\n${metricBlock}\n\n-------------------------------------\nAESTHETIC CATEGORY DEFINITIONS\n-------------------------------------\n\neditorial:\nDistinctive, fashion-oriented, visually striking, structurally memorable.\n\nrunway:\nStrong proportions and structural clarity suitable for catwalk presentation.\n\navant_garde:\nUnconventional, artistically unusual, visually experimental or sharply distinctive.\n\nandrogynous:\nBalanced or ambiguous masculine/feminine visual signaling with strong casting coherence.\n\nclassic:\nBalanced, conventional, timeless structure without strong extremity.\n\nstreetwear:\nContemporary, culturally current, expressive, lifestyle-oriented visual identity.\n\n-------------------------------------\nPHOTOS\n-------------------------------------\n\n${photoBlock}\n\n-------------------------------------\nEVALUATION TASK\n-------------------------------------\n\nSTEP 1 — STRUCTURAL ANALYSIS\n\nMeasure:\n- facial geometry\n- proportions\n- symmetry\n- body structure\n- visual balance\n- category-relevant structural traits\n\nSTEP 2 — VISUAL IDENTITY\n\nDetermine:\n- visually conventional vs distinctive\n- memorable vs forgettable\n- soft vs sharp structure\n- safe vs visually striking\n- strongest natural aesthetic identity\n\nSTEP 3 — CATEGORY SCORING\n\nAssign intrinsic category scores ONLY from visual identity.\n\nScores should reflect:\n- structural alignment\n- visual memorability\n- category coherence\n- aesthetic distinctiveness\n\nDo NOT:\n- optimize for agencies\n- optimize for markets\n- optimize for brands\n\n-------------------------------------\nRETURN JSON\n-------------------------------------\n\n{\n  \"structural_metrics\": {\n    \"symmetry_score\": 0.0,\n    \"memorability_index\": 0.0,\n    \"androgyny_score\": 0.0,\n    \"overall_body_proportion\": 0.0,\n    \"cheek_to_jaw_ratio\": 0.0,\n    \"interpupillary_index\": 0.0,\n    \"facial_thirds_balance\": \"balanced\",\n    \"intercanthal_distance\": \"Standard\",\n    \"shoulder_line\": \"Straight\",\n    ${genderSchema}\n  },\n\n  \"structural_confidence\": \"High|Medium|Low\",\n\n  \"aesthetic_category\": ${categoryEnum},\n\n  \"aesthetic_sub_type\": \"string\",\n\n  \"visual_summary\": \"2-3 sentence structural and aesthetic description\",\n\n  \"active_category_scores\": {\n    \"editorial\": 0.0,\n    \"runway\": 0.0,\n    \"avant_garde\": 0.0,\n    \"androgynous\": 0.0,\n    \"classic\": 0.0,\n    \"streetwear\": 0.0\n  },\n\n  \"zygomatic_ratio\": 0.0,\n  \"zygomatic_confidence\": \"High|Medium|Low\",\n\n  \"symmetry_variance\": 0.0,\n\n  \"versatility_flag\": false,\n\n  \"visual_identity_verdict\":\n    \"forgettable\" |\n    \"commercial\" |\n    \"distinctive\" |\n    \"editorial\" |\n    \"avant_garde\"\n}\n\nRules:\n- Return ONLY valid JSON\n- No markdown\n- No explanations\n- No extra fields\n`;\n\nreturn [{\n  json: {\n    prompt,\n    intake_id: photoData.intake_id,\n    batch_id: photoData.batch_id,\n    gender\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        -96
+      ],
+      "id": "00afad06-1730-4029-aedd-d02f2a2b5f77",
+      "name": "Code: Build Structural Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": {{ JSON.stringify($json.prompt) }}\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"responseMimeType\": \"application/json\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1792,
+        -96
+      ],
+      "id": "40788a98-fa03-40ef-8fde-3cf0de1dd07d",
+      "name": "Gemini : Model Analysis",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "PYYO93Slv5tGPoXN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst gemini_raw = response.candidates[0].content.parts[0].text;\nconst cleaned = gemini_raw\n  .replace(/```json/g, '')\n  .replace(/```/g, '')\n  .trim();\n\nlet result;\ntry {\n  result = JSON.parse(cleaned);\n} catch(e) {\n  result = {\n    structural_metrics: {},\n    active_category_scores: {},\n    structural_confidence: 'Low'\n  };\n}\n\nconst sm  = result.structural_metrics || {};\nconst acs = result.active_category_scores || {};\n\nconst intake_id = $('Code: Build Structural Prompt').first().json.intake_id;\nconst batch_id  = $('Code: Build Structural Prompt').first().json.batch_id;\nconst gender    = $('Code: Build Structural Prompt').first().json.gender;\n\nreturn [{\n  json: {\n    intake_id,\n    batch_id,\n    gender,\n\n    // ── UNIVERSAL STRUCTURAL ─────────────────────────────────────\n    symmetry_score:            sm.symmetry_score            ?? null,\n    memorability_index:        sm.memorability_index        ?? null,\n    androgyny_score:           sm.androgyny_score           ?? null,\n    overall_body_proportion:   sm.overall_body_proportion   ?? null,\n    cheek_to_jaw_ratio:        sm.cheek_to_jaw_ratio        ?? null,\n    interpupillary_index:      sm.interpupillary_index      ?? null,\n    facial_thirds_balance:     sm.facial_thirds_balance     ?? null,\n    intercanthal_distance:     sm.intercanthal_distance     ?? null,\n    shoulder_line:             sm.shoulder_line             ?? null,\n\n    // ── FEMALE ───────────────────────────────────────────────────\n    jaw_definition:            sm.jaw_definition            ?? null,\n    cheekbone_structure:       sm.cheekbone_structure       ?? null,\n    supraorbital_ridge_score:  sm.supraorbital_ridge_score  ?? null,\n    smile_corridor:            sm.smile_corridor            ?? null,\n    clavicle_prominence:       sm.clavicle_prominence       ?? null,\n    leg_to_body_ratio:         sm.leg_to_body_ratio         ?? null,\n    razor_jaw_angle:           sm.razor_jaw_angle           ?? null,\n\n    // ── MALE ─────────────────────────────────────────────────────\n    jawline_squareness:        sm.jawline_squareness        ?? null,\n    brow_ridge_strength:       sm.brow_ridge_strength       ?? null,\n    shoulder_to_waist_ratio:   sm.shoulder_to_waist_ratio   ?? null,\n    neck_definition:           sm.neck_definition           ?? null,\n    height_to_torso_ratio:     sm.height_to_torso_ratio     ?? null,\n    facial_hair_versatility:   sm.facial_hair_versatility   ?? null,\n\n    // ── NON-BINARY ───────────────────────────────────────────────\n    facial_gender_read:        sm.facial_gender_read        ?? null,\n    androgyny_casting_fit:     sm.androgyny_casting_fit     ?? null,\n\n    // ── EXTENDED STRUCTURAL ──────────────────────────────────────\n    zygomatic_ratio:           result.zygomatic_ratio       ?? null,\n    zygomatic_confidence:      result.zygomatic_confidence  ?? null,\n    symmetry_variance:         result.symmetry_variance     ?? null,\n    versatility_flag:          result.versatility_flag      ?? null,\n\n    // ── AESTHETIC (INTRINSIC) ────────────────────────────────────\n    aesthetic_category:        result.aesthetic_category    ?? null,\n    aesthetic_sub_type:        result.aesthetic_sub_type    ?? null,\n    active_category_scores:    acs,   // kept as object for stage 2 consumption\n    visual_summary:            result.visual_summary        ?? null,\n\n    // ── CONFIDENCE ───────────────────────────────────────────────\n    structural_confidence:     result.structural_confidence ?? null,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2016,
+        -96
+      ],
+      "id": "836feebb-a439-44f5-93c8-167fbf743a49",
+      "name": "Code: Parse Analysis Result"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── INPUT DATA ──────────────────────────────────────────────────────\nconst d = $('Code: Parse Analysis Result').first().json;\nconst cfg = $('Read Agency Slug').first().json.fields;\n\n// ── CATEGORY WEIGHTS ────────────────────────────────────────────────\nconst categoryWeights = JSON.parse(\n  cfg['Aesthetic Category Weights JSON']\n);\n\n// ── ACTIVE CATEGORIES ───────────────────────────────────────────────\nconst activeEntries = Object.entries(categoryWeights)\n  .filter(([k, v]) => k !== 'denominator' && v > 0);\n\nconst categoryList = activeEntries\n  .map(([k]) => k)\n  .join(', ');\n\n// ── TIER LABELS ─────────────────────────────────────────────────────\nconst tier1 = cfg['Rank Label Tier 1'];\nconst tier2 = cfg['Rank Label Tier 2'];\nconst tier3 = cfg['Rank Label Tier 3'];\nconst tier4 = cfg['Rank Label Tier 4'];\n\n// ── OPTIONAL SCORING ANCHORS ───────────────────────────────────────\nconst anchors = cfg['Scoring Anchors JSON']\n  ? JSON.parse(cfg['Scoring Anchors JSON'])\n  : {};\n\nconst anchorBlock = Object.keys(anchors).length > 0\n  ? Object.entries(anchors)\n      .filter(([cat]) =>\n        activeEntries.find(([k]) => k === cat)\n      )\n      .map(([cat, levels]) =>\n`${cat}\n95+: ${levels['95_plus']}\n75-84: ${levels['75_84']}\n55-74: ${levels['55_74']}\nBelow 55: ${levels['below_55']}`\n      )\n      .join('\\n\\n')\n  : '';\n\n// ── FILTER STRUCTURAL METRICS ──────────────────────────────────────\nconst structuralMetrics = Object.fromEntries(\n  Object.entries({\n    symmetry_score:            d.symmetry_score,\n    memorability_index:        d.memorability_index,\n    androgyny_score:           d.androgyny_score,\n    overall_body_proportion:   d.overall_body_proportion,\n    cheek_to_jaw_ratio:        d.cheek_to_jaw_ratio,\n    interpupillary_index:      d.interpupillary_index,\n    facial_thirds_balance:     d.facial_thirds_balance,\n    intercanthal_distance:     d.intercanthal_distance,\n    shoulder_line:             d.shoulder_line,\n    jaw_definition:            d.jaw_definition,\n    cheekbone_structure:       d.cheekbone_structure,\n    supraorbital_ridge_score:  d.supraorbital_ridge_score,\n    smile_corridor:            d.smile_corridor,\n    clavicle_prominence:       d.clavicle_prominence,\n    leg_to_body_ratio:         d.leg_to_body_ratio,\n    razor_jaw_angle:           d.razor_jaw_angle,\n    jawline_squareness:        d.jawline_squareness,\n    brow_ridge_strength:       d.brow_ridge_strength,\n    shoulder_to_waist_ratio:   d.shoulder_to_waist_ratio,\n    neck_definition:           d.neck_definition,\n    height_to_torso_ratio:     d.height_to_torso_ratio,\n    facial_hair_versatility:   d.facial_hair_versatility,\n    facial_gender_read:        d.facial_gender_read,\n    androgyny_casting_fit:     d.androgyny_casting_fit,\n    zygomatic_ratio:           d.zygomatic_ratio,\n    symmetry_variance:         d.symmetry_variance,\n    photo_quality_score:       d.photo_quality_score\n  }).filter(([_, v]) => v !== null && v !== undefined)\n);\n\n// ── CATEGORY SCORES ────────────────────────────────────────────────\nconst categoryScores = d.active_category_scores || {};\n\n// ── DOMINANT CATEGORY ───────────────────────────────────────────────\nconst dominantEntry = Object.entries(categoryScores)\n  .sort(([, a], [, b]) => b - a)[0];\n\nconst dominantCategory      = dominantEntry?.[0] ?? null;\nconst dominantCategoryScore = dominantEntry?.[1] ?? null;\n\n// ── AGENCY WEIGHTED SCORE ───────────────────────────────────────────\nconst agencyWeightedScore = dominantCategory && categoryWeights[dominantCategory]\n  ? +(dominantCategoryScore * (categoryWeights[dominantCategory] / 100)).toFixed(2)\n  : null;\n\n// ── PROMPT ─────────────────────────────────────────────────────────\nconst prompt = `\nYou are Talent Prism Stage 2: Agency Fit & Ranking Engine.\n\nStage 1 has already determined:\n- structural geometry\n- intrinsic aesthetic identity\n- category tendencies\n- visual memorability\n\nYou MUST treat Stage 1 outputs as ground truth.\n\nYour task:\n1. Evaluate agency compatibility\n2. Evaluate market fit\n3. Evaluate booking potential\n4. Evaluate brand alignment\n5. Produce final ranking assessment\n\nDo NOT re-evaluate the applicant visually.\n\nReturn ONLY valid JSON.\n\n-------------------------------------\nGLOBAL RULES\n-------------------------------------\n\n- Agency fit is relative, not universal\n- Strong faces may still mismatch an agency\n- Weak category alignment should score low\n- Use full scoring range\n- Most applicants should NOT exceed 75\n- Scores above 90 should be rare\n- Distinctiveness only matters if aligned with agency positioning\n- Commercial viability does NOT imply editorial fit\n- Avoid optimism bias\n- Be selective\n- Do not inflate scores\n- score_reasoning must be 2-3 compact sentences maximum\n- No verbose elaboration\n- If photo_quality_score is below 50, reduce ranking_confidence and increase scoring skepticism\n\n-------------------------------------\nSTAGE 1 VISUAL PROFILE\n-------------------------------------\n\nGender:\n${d.gender}\n\nStructural metrics:\n${JSON.stringify(structuralMetrics, null, 2)}\n\nIntrinsic category scores:\n${JSON.stringify(categoryScores, null, 2)}\n\nDominant category: ${dominantCategory ?? 'unknown'}\nDominant category score: ${dominantCategoryScore ?? 'unknown'}\nAgency weighted score (dominant × agency weight): ${agencyWeightedScore ?? 'unknown'}\n\nPrimary intrinsic category:\n${d.aesthetic_category ?? 'Not provided'}\n\nAesthetic sub-type:\n${d.aesthetic_sub_type ?? 'Not provided'}\n\nVisual summary:\n${d.visual_summary ?? 'Not provided'}\n\nStructural confidence:\n${d.structural_confidence ?? 'Not provided'}\n\n-------------------------------------\nAGENCY CONTEXT\n-------------------------------------\n\nAgency:\n${cfg['Agency Slug']}\n\nPrimary markets:\n${cfg['Primary Markets (City)']}\n\nBrand relationships:\n${cfg['Brand Relationships']}\n\nAgency categories:\n${cfg['Aesthetic Categories']}\n\nCategory priority weights:\n${JSON.stringify(categoryWeights, null, 2)}\n\n-------------------------------------\nSCORING LOGIC\n-------------------------------------\n\nUse the agency weighted score as your scoring anchor.\nAdjust up or down based on:\n\n- How well the dominant category matches agency positioning\n- Booking realism for the stated markets\n- Brand visual alignment\n- Whether memorability is relevant to agency needs\n- Structural confidence (Low confidence = widen uncertainty, reduce scores)\n- Photo quality (below 50 = increase skepticism on edge-case scores)\n\nCategory weights are guidance signals, NOT rigid arithmetic.\n\nPenalize heavily if:\n- Dominant category mismatches agency priorities\n- Face is visually generic relative to agency positioning\n- Market fit is weak\n- Structural confidence is Low\n\n-------------------------------------\nCALIBRATION\n-------------------------------------\n\n${anchorBlock || 'No scoring anchors provided.'}\n\n-------------------------------------\nFINAL VERDICT TIERS\n-------------------------------------\n\nAllowed verdict values:\n- ${tier1}\n- ${tier2}\n- ${tier3}\n- ${tier4}\n\n-------------------------------------\nRETURN JSON\n-------------------------------------\n\nProduce score_reasoning FIRST before all numeric scores.\n\n{\n  \"score_reasoning\": \"2 sentences. Agency fit or mismatch only. Reference dominant category score and final_agency_score.\",\n\n  \"dominant_category_score\": ${dominantCategoryScore ?? 0.0},\n\n  \"agency_weighted_score\": ${agencyWeightedScore ?? 0.0},\n\n  \"structural_score\": 0.0,\n\n  \"aesthetic_score\": 0.0,\n\n  \"final_agency_score\": 0.0,\n\n  \"primary_agency_fit_category\":\n    \"<one category from: ${categoryList}>\",\n\n  \"market_fit\": {\n    \"primary_market\": \"string\",\n    \"secondary_market\": \"string\"\n  },\n\n\n  \"booking_potential\":\n    \"low\" | \"moderate\" | \"strong\" | \"elite\",\n\n  \"ranking_confidence\":\n    \"Low\" | \"Medium\" | \"High\",\n\n  \"final_verdict\": \"string\"\n}\n\nRules:\n- final_verdict must be one of the allowed verdict tiers\n- dominant_category_score and agency_weighted_score are pre-computed — do not override them\n- Return ONLY valid JSON\n- No markdown\n- No extra text\n`;\nreturn [{\n  json: {\n    prompt,\n    intake_id: d.intake_id\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        -96
+      ],
+      "id": "3de1844c-77dd-4356-bf16-cc2e4fbb20eb",
+      "name": "Code: Build Stage 2 Prompt"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        -176
+      ],
+      "id": "4dad6edd-cc13-448e-a56f-4c6a35fc90aa",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-sonnet-4-6",
+          "mode": "list",
+          "cachedResultName": "claude-sonnet-4-6"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=={{ $('Code: Build Stage 2 Prompt').first().json.prompt }}"
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 5000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        2560,
+        -96
+      ],
+      "id": "1e394a7c-5aef-411c-8833-b1114b40b922",
+      "name": "Message a model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "N6JHvvivpOiiQHdK",
+          "name": "Anthropic Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const stage1 =\n  $('Code: Parse Analysis Result').first().json;\n\nconst stage2 =\n  $('Code: Parse Stage 2 Result').first().json;\n\nreturn [{\n  json: {\n\n    // ── IDS ─────────────────────────────────────\n    intake_id: stage1.intake_id,\n    batch_id: stage1.batch_id,\n    gender: stage1.gender,\n\n    // ── STAGE 1 STRUCTURAL ──────────────────────\n    symmetry_score: stage1.symmetry_score,\n    memorability_index: stage1.memorability_index,\n    androgyny_score: stage1.androgyny_score,\n    overall_body_proportion: stage1.overall_body_proportion,\n    cheek_to_jaw_ratio: stage1.cheek_to_jaw_ratio,\n    interpupillary_index: stage1.interpupillary_index,\n    facial_thirds_balance: stage1.facial_thirds_balance,\n    intercanthal_distance: stage1.intercanthal_distance,\n    shoulder_line: stage1.shoulder_line,\n\n    jaw_definition: stage1.jaw_definition,\n    cheekbone_structure: stage1.cheekbone_structure,\n    supraorbital_ridge_score: stage1.supraorbital_ridge_score,\n    smile_corridor: stage1.smile_corridor,\n    clavicle_prominence: stage1.clavicle_prominence,\n    leg_to_body_ratio: stage1.leg_to_body_ratio,\n    razor_jaw_angle: stage1.razor_jaw_angle,\n\n    jawline_squareness: stage1.jawline_squareness,\n    brow_ridge_strength: stage1.brow_ridge_strength,\n    shoulder_to_waist_ratio: stage1.shoulder_to_waist_ratio,\n    neck_definition: stage1.neck_definition,\n    height_to_torso_ratio: stage1.height_to_torso_ratio,\n    facial_hair_versatility: stage1.facial_hair_versatility,\n\n    facial_gender_read: stage1.facial_gender_read,\n    androgyny_casting_fit: stage1.androgyny_casting_fit,\n\n    zygomatic_ratio: stage1.zygomatic_ratio,\n    zygomatic_confidence: stage1.zygomatic_confidence,\n    symmetry_variance: stage1.symmetry_variance,\n    versatility_flag: stage1.versatility_flag,\n\n    aesthetic_category: stage1.aesthetic_category,\n    aesthetic_sub_type: stage1.aesthetic_sub_type,\n    active_category_scores: stage1.active_category_scores,\n    visual_summary: stage1.visual_summary,\n\n    structural_confidence: stage1.structural_confidence,\n\n    // ── STAGE 2 RANKING ─────────────────────────\n    score_reasoning: stage2.score_reasoning,\n\n    structural_score: stage2.structural_score,\n    aesthetic_score: stage2.aesthetic_score,\n    final_agency_score: stage2.final_agency_score,\n\n    primary_agency_fit_category:\n      stage2.primary_agency_fit_category,\n\n    booking_potential:\n      stage2.booking_potential,\n\n    ranking_confidence:\n      stage2.ranking_confidence,\n\n    final_verdict:\n      stage2.final_verdict,\n\n    brand_reasoning:\n      stage2.brand_reasoning,\n\n    // ── MARKET FIT ──────────────────────────────\n  primary_market:\n  stage2.market_fit_primary || null,\n\nsecondary_market:\n  stage2.market_fit_secondary || null,\n\n    // ── JSON STORAGE ────────────────────────────\n    stage2_analysis: stage2\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3184,
+        -96
+      ],
+      "id": "355bff7f-76c7-4ed8-bf57-b217d7866308",
+      "name": "Code : Combining all data to write"
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst raw = response.content[0].text;\n\nconst cleaned = raw\n  .replace(/```json/g, '')\n  .replace(/```/g, '')\n  .trim();\n\nlet result;\ntry {\n  result = JSON.parse(cleaned);\n} catch(e) {\n  result = {\n    error: 'JSON parse error',\n    raw\n  };\n}\n\nconst intake_id = $('Code: Build Stage 2 Prompt').first().json.intake_id;\n\nreturn [{\n  json: {\n    intake_id,\n    score_reasoning:             result.score_reasoning              ?? null,\n    dominant_category_score:     result.dominant_category_score      ?? null,\n    agency_weighted_score:       result.agency_weighted_score        ?? null,\n    structural_score:            result.structural_score             ?? null,\n    aesthetic_score:             result.aesthetic_score              ?? null,\n    final_agency_score:          result.final_agency_score           ?? null,\n    primary_agency_fit_category: result.primary_agency_fit_category  ?? null,\n    market_fit_primary:          result.market_fit?.primary_market   ?? null,\n    market_fit_secondary:        result.market_fit?.secondary_market ?? null,\n    booking_potential:           result.booking_potential            ?? null,\n    ranking_confidence:          result.ranking_confidence           ?? null,\n    final_verdict:               result.final_verdict                ?? null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2976,
+        -96
+      ],
+      "id": "7878917a-1e7a-487b-9f3b-22e12fe4ed8d",
+      "name": "Code: Parse Stage 2 Result"
+    }
+  ],
+  "pinData": {
+    "Trigger: Called by Intake - Photo Check": [
+      {
+        "json": {
+          "intake_id": "2dbc521e-7b33-431a-9ab5-3d154d25db24"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "intake_id": "2dbc521e-7b33-431a-9ab5-3d154d25db24"
+        },
+        "pairedItem": {
+          "item": 1
+        }
+      },
+      {
+        "json": {
+          "intake_id": "2dbc521e-7b33-431a-9ab5-3d154d25db24"
+        },
+        "pairedItem": {
+          "item": 2
+        }
+      },
+      {
+        "json": {
+          "intake_id": "2dbc521e-7b33-431a-9ab5-3d154d25db24"
+        },
+        "pairedItem": {
+          "item": 3
+        }
+      },
+      {
+        "json": {
+          "intake_id": "2dbc521e-7b33-431a-9ab5-3d154d25db24"
+        },
+        "pairedItem": {
+          "item": 4
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Switch: Route by Trigger Type": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Get Single Intake Record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase: Get Queued Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Get Queued Records": {
+      "main": [
+        [
+          {
+            "node": "Merge: Single + Batch",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Supabase: Get Single Intake Record": {
+      "main": [
+        [
+          {
+            "node": "Merge: Single + Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge: Single + Batch": {
+      "main": [
+        [
+          {
+            "node": "Read Agency Slug",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Get Photo URLs": {
+      "main": [
+        [
+          {
+            "node": "Code: Build Gemini Photo List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Build Gemini Photo List": {
+      "main": [
+        [
+          {
+            "node": "Code: Build Structural Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Agency Slug": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Get Photo URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: Called by Intake - Photo Check": {
+      "main": [
+        [
+          {
+            "node": "Switch: Route by Trigger Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: Update intake (structural results)": {
+      "main": [
+        []
+      ]
+    },
+    "Code: Build Structural Prompt": {
+      "main": [
+        [
+          {
+            "node": "Gemini : Model Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini : Model Analysis": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse Analysis Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse Analysis Result": {
+      "main": [
+        [
+          {
+            "node": "Code: Build Stage 2 Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Build Stage 2 Prompt": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Switch: Route by Trigger Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse Stage 2 Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code : Combining all data to write": {
+      "main": [
+        [
+          {
+            "node": "Supabase: Update intake (structural results)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse Stage 2 Result": {
+      "main": [
+        [
+          {
+            "node": "Code : Combining all data to write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "09969aca-825e-42fc-a871-f37bed888828",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4e6bae92b2fffd2d829302f81ac40e1b7b77354f1229f56727b9c27fa8c5a39a"
+  },
+  "id": "5yx5D3VV49799BuR",
+  "tags": [
+    {
+      "updatedAt": "2026-04-07T05:54:22.284Z",
+      "createdAt": "2026-04-07T05:54:22.284Z",
+      "id": "1xyV3F0vU5tED40A",
+      "name": "intake"
+    },
+    {
+      "updatedAt": "2026-04-07T05:54:12.040Z",
+      "createdAt": "2026-04-07T05:54:12.040Z",
+      "id": "3ctqgxjHRVbu8uPR",
+      "name": "noir-test"
+    },
+    {
+      "updatedAt": "2026-04-07T05:54:41.309Z",
+      "createdAt": "2026-04-07T05:54:41.309Z",
+      "id": "617SY1s5iJZzmnko",
+      "name": "noir-collective-france"
+    },
+    {
+      "updatedAt": "2026-04-07T05:54:33.816Z",
+      "createdAt": "2026-04-07T05:54:33.816Z",
+      "id": "G7U2cDrrdAaCu0BL",
+      "name": "talent-prism"
+    },
+    {
+      "updatedAt": "2026-04-07T05:54:15.456Z",
+      "createdAt": "2026-04-07T05:54:15.456Z",
+      "id": "U5Z5J0HkLxUQA5hK",
+      "name": "prototype"
+    },
+    {
+      "updatedAt": "2026-04-07T06:57:56.832Z",
+      "createdAt": "2026-04-07T06:57:56.832Z",
+      "id": "wAJsiiKAX1HZZKGW",
+      "name": "reference"
+    },
+    {
+      "updatedAt": "2026-04-07T06:58:06.901Z",
+      "createdAt": "2026-04-07T06:58:06.901Z",
+      "id": "xzkRjFgbGBkSMd3E",
+      "name": "demo"
+    }
+  ]
+}

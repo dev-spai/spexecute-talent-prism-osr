@@ -1,0 +1,333 @@
+# AI Configuration
+
+The AI configuration defines how Talent Prism evaluates applicants throughout the processing pipeline.
+
+Rather than embedding AI behavior directly into workflows, Talent Prism centralizes model selection, prompts, evaluation criteria, confidence thresholds, and output formats into a configurable layer. This enables organizations to customize their evaluation process without modifying workflow logic.
+
+---
+
+# Overview
+
+The AI configuration controls:
+
+- AI providers
+- Model selection
+- Prompt templates
+- Vision processing
+- Structured evaluation
+- Confidence thresholds
+- Retry policies
+- Output schemas
+- Safety settings
+
+Each AI task is independent and may use different models or prompts depending on the organization's requirements.
+
+---
+
+# AI Providers
+
+Talent Prism is designed to support multiple AI providers.
+
+Examples include:
+
+- Google Gemini
+- OpenAI
+- Anthropic Claude
+- Azure OpenAI
+- Self-hosted LLMs
+
+Example
+
+```yaml
+provider: gemini
+```
+
+Organizations may replace the provider without changing the surrounding workflows.
+
+---
+
+# Model Configuration
+
+Different models may be assigned to different evaluation tasks.
+
+Example
+
+```yaml
+models:
+
+  vision: gemini-2.5-flash
+
+  structural_analysis: gemini-2.5-flash
+
+  candidate_evaluation: gemini-2.5-pro
+```
+
+Selecting different models allows organizations to balance speed, cost, and accuracy.
+
+---
+
+# Prompt Configuration
+
+Every AI task is driven by a configurable prompt.
+
+Prompt templates should define:
+
+- Role
+- Instructions
+- Evaluation criteria
+- Expected output
+- Formatting rules
+- Restrictions
+
+Example
+
+```yaml
+prompts:
+
+  photo_compliance:
+
+    version: v1
+
+  structural_analysis:
+
+    version: v2
+
+  agency_evaluation:
+
+    version: v3
+```
+
+Prompt templates should remain version controlled to ensure reproducible evaluations.
+
+---
+
+# Vision Processing
+
+Vision models evaluate uploaded applicant media.
+
+Typical tasks include:
+
+- Image quality assessment
+- Pose verification
+- Photo compliance
+- Background detection
+- Visibility checks
+- Facial visibility
+- Full body verification
+
+Example
+
+```yaml
+vision:
+
+  enabled: true
+
+  minimum_images: 2
+
+  detect_missing_photos: true
+```
+
+Vision processing should validate submitted media before downstream evaluation begins.
+
+---
+
+# Structured Analysis
+
+AI may generate structured observations about each applicant.
+
+Typical outputs include:
+
+- Physical observations
+- Strengths
+- Weaknesses
+- Commercial suitability
+- Editorial suitability
+- Runway suitability
+- Overall recommendations
+
+Example
+
+```yaml
+analysis:
+
+  structured_output: true
+```
+
+Structured outputs are easier to validate and integrate with downstream systems.
+
+---
+
+# Confidence Thresholds
+
+Organizations may define minimum confidence levels before accepting AI-generated evaluations.
+
+Example
+
+```yaml
+confidence:
+
+  minimum_score: 0.85
+
+  require_review_below: 0.70
+```
+
+Applications below the configured threshold may be routed for manual review.
+
+---
+
+# Output Format
+
+AI responses should use structured formats whenever possible.
+
+Example
+
+```yaml
+output:
+
+  format: json
+
+  schema_validation: true
+```
+
+Structured outputs improve reliability and reduce downstream parsing errors.
+
+---
+
+# Retry Policy
+
+Organizations may configure retry behavior for temporary AI failures.
+
+Example
+
+```yaml
+retry:
+
+  attempts: 3
+
+  backoff: exponential
+```
+
+Retries should only occur for transient failures such as rate limits or network interruptions.
+
+---
+
+# Temperature
+
+Generation settings may be adjusted depending on the task.
+
+Example
+
+```yaml
+generation:
+
+  temperature: 0.2
+
+  top_p: 0.9
+```
+
+Evaluation tasks generally benefit from deterministic responses with lower temperature values.
+
+---
+
+# Safety Configuration
+
+Organizations may configure safeguards around AI-generated content.
+
+Examples include:
+
+- Schema validation
+- Output length limits
+- Content filtering
+- Hallucination detection
+- Unsafe content rejection
+
+Example
+
+```yaml
+safety:
+
+  validate_schema: true
+
+  reject_empty_response: true
+
+  reject_invalid_json: true
+```
+
+These safeguards help ensure reliable and machine-readable outputs.
+
+---
+
+# Human Review
+
+Organizations may require recruiter review under specific conditions.
+
+Examples include:
+
+- Low confidence
+- Invalid output
+- Missing media
+- Incomplete evaluations
+- AI processing failures
+
+Example
+
+```yaml
+human_review:
+
+  enabled: true
+
+  confidence_threshold: 0.70
+```
+
+Human review acts as a quality assurance layer before final recruitment decisions.
+
+---
+
+# Versioning
+
+AI configurations should be version controlled.
+
+Versioning enables:
+
+- Prompt improvements
+- Model upgrades
+- A/B testing
+- Rollback support
+- Evaluation consistency
+
+Example
+
+```yaml
+version:
+
+  prompts: v3
+
+  models: v2
+
+  evaluation: v5
+```
+
+Maintaining configuration history improves traceability and reproducibility.
+
+---
+
+# Best Practices
+
+- Keep prompts separate from workflow logic.
+- Use structured outputs whenever possible.
+- Validate every AI response before downstream processing.
+- Prefer deterministic settings for evaluation tasks.
+- Version prompts and model configurations.
+- Route uncertain evaluations to human reviewers.
+- Avoid embedding organization-specific rules directly into prompts.
+
+---
+
+# Related Documentation
+
+- Organization Settings
+- Intake Configuration
+- Workflow Configuration
+- Storage Configuration
+- Security Configuration
+- Maintenance Configuration

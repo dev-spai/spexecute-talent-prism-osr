@@ -1,0 +1,73 @@
+## Purpose
+
+Provides a simplified, read-only summary of applicant records for dashboards, search, reporting, and review interfaces. It exposes the most commonly accessed applicant information, AI evaluation, and workflow status from the `intake` table.
+
+---
+
+## Source Tables
+
+| Table | Purpose |
+| --- | --- |
+| `intake` | Primary applicant information and AI evaluation data. |
+
+---
+
+# Exposed Columns
+
+## Applicant Information
+
+| Column | Meaning |
+| --- | --- |
+| `intake_id` | Unique applicant identifier. |
+| `full_name` | Applicant's full name. |
+| `email` | Primary email address. |
+| `phone` | Contact phone number. |
+| `instagram_url` | Applicant's Instagram profile. |
+| `age_at_application` | Applicant's age at the time of application. |
+| `location_city` | Applicant's city. |
+| `language` | Primary language spoken. |
+
+---
+
+## AI Evaluation
+
+| Column | Meaning |
+| --- | --- |
+| `aesthetic_category` | AI-generated aesthetic classification. |
+| `primary_market` | Recommended primary market. |
+| `secondary_market` | Recommended secondary market. |
+| `structural_score` | Structural assessment score. |
+| `aesthetic_score` | Overall aesthetic score. |
+| `final_agency_score` | Overall suitability score. |
+| `booking_potential` | Estimated commercial booking potential. |
+| `ranking_confidence` | AI confidence in the recommendation. |
+| `final_verdict` | Final AI recommendation. |
+
+---
+
+## Workflow
+
+| Column | Meaning |
+| --- | --- |
+| `status` | Current application status. |
+| `application_stage` | Current workflow stage. |
+| `application_date` | Date the application was submitted. |
+
+---
+
+## Typical Use Cases
+
+- Applicant dashboard
+- Search and filtering
+- Retool tables
+- Reporting
+- CSV exports
+- API responses
+
+---
+
+## Why This View Exists
+
+The `intake` table contains over 150 fields covering applicant information, AI analysis, workflow, auditing, and processing metadata. Most user interfaces only require a subset of these fields.
+
+This view provides a clean, lightweight representation that simplifies queries, reduces data transfer, and serves as the primary dataset for dashboards and reporting.

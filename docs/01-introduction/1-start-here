@@ -1,0 +1,29 @@
+# Reading Guide
+
+If you're evaluating Talent Prism, we recommend reading the documentation in the following order:
+
+### 1. Start Here
+
+- Why Talent Prism 
+- Repository Overview
+- Architecture
+
+### 2. Configuration
+
+Learn how organizations customize Talent Prism without modifying workflows.
+
+### 3. Storage
+
+Understand media storage, Cloudflare R2 and secure access.
+
+### 4. Workflow Automation
+
+Review the applicant processing pipeline.
+
+### 5. Frontend Integration
+
+Learn how Talent Prism integrates with existing systems.
+
+### 6. Frontend Reference
+
+Explore one possible production implementation.
