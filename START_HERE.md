@@ -1,4 +1,4 @@
-![Talent Prism logo.](../../assets/branding/Spexecute_full_logo.png)
+![Talent Prism logo.](assets/branding/Spexecute_full_logo.png)
 
 # Why Talent Prism Exists
 
