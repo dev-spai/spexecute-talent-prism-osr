@@ -1,5 +1,7 @@
 # SPeXecute Talent Prism OSR (MUST READ)
 
+[Visit SpeXecute website to Learn More](https://spexecute.com/talent-prism-by-spexecute/)
+
 ### An Open-Source Reference Implementation for AI-Assisted Applicant Intake and Evaluation for Talent Management Industry
 
 
