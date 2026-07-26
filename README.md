@@ -1,7 +1,4 @@
-![SPeXecute logo.](assets/branding/Spexecute_full_logo.png)
 # SPeXecute Talent Prism OSR (MUST READ)
-
-
 
 ### An Open-Source Reference Implementation for AI-Assisted Applicant Intake and Evaluation for Talent Management Industry
 
