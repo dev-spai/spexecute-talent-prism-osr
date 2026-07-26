@@ -1,13 +1,16 @@
-# Talent Prism OSR (MUST READ)
+![SPeXecute logo.](assets/branding/Spexecute_full_logo.png)
+# SPeXecute Talent Prism OSR (MUST READ)
 
 
 
 ### An Open-Source Reference Implementation for AI-Assisted Applicant Intake and Evaluation for Talent Management Industry
 
-> [!IMPORTANT]
-> **Talent Prism OSR is an open-source reference implementation.** It demonstrates architectural patterns, workflow automation, and implementation techniques for building AI-assisted applicant intake and evaluation platforms. It is **not** production-ready software, a hosted service, or a commercially supported product. Every deployment is unique, and the organization deploying or modifying this repository is solely responsible for validating, securing, operating, maintaining, and supporting its implementation.
 
 ![Talent Prism poster illustrating the open-source AI-assisted applicant evaluation reference architecture.](assets/branding/talent-prism-poster.png)
+
+
+> [!IMPORTANT]
+> **Talent Prism OSR is an open-source reference implementation.** It demonstrates architectural patterns, workflow automation, and implementation techniques for building AI-assisted applicant intake and evaluation platforms. It is **not** production-ready software, a hosted service, or a commercially supported product. Every deployment is unique, and the organization deploying or modifying this repository is solely responsible for validating, securing, operating, maintaining, and supporting its implementation.
 
 ---
 
